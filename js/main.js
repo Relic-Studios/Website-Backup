@@ -43,107 +43,149 @@ const portfolioConfig = {
         {
             type: 'live',
             src: 'assets/videos/20250418_201655.mp4',
-            thumbnail: 'assets/images/video-thumbnails/20250418_201655.jpg'
+            thumbnail: 'assets/images/video-thumbnails/20250418_201655.jpg',
+            title: 'Live Event Visuals',
+            caption: 'Real-time VJ performance | TouchDesigner'
         },
         {
             type: 'live',
             src: 'assets/videos/20250418_220743.mp4',
-            thumbnail: 'assets/images/video-thumbnails/20250418_220743.jpg'
+            thumbnail: 'assets/images/video-thumbnails/20250418_220743.jpg',
+            title: 'LED Wall Performance',
+            caption: 'Audio-reactive visuals | Live event'
         },
         {
             type: 'live',
             src: 'assets/videos/20250418_223044.mp4',
-            thumbnail: 'assets/images/video-thumbnails/20250418_223044.jpg'
+            thumbnail: 'assets/images/video-thumbnails/20250418_223044.jpg',
+            title: 'Immersive Stage Design',
+            caption: 'Multi-screen live performance'
         },
         {
             type: 'live',
             src: 'assets/videos/20250418_225001.mp4',
-            thumbnail: 'assets/images/video-thumbnails/20250418_225001.jpg'
+            thumbnail: 'assets/images/video-thumbnails/20250418_225001.jpg',
+            title: 'Festival Visuals',
+            caption: 'Real-time generative visuals | Live event'
         },
         {
             type: 'live',
             src: 'assets/videos/20250418_235734.mp4',
-            thumbnail: 'assets/images/video-thumbnails/20250418_235734.jpg'
+            thumbnail: 'assets/images/video-thumbnails/20250418_235734.jpg',
+            title: 'Nightclub Performance',
+            caption: 'Audio-reactive LED wall content'
         },
         {
             type: 'video',
             src: 'assets/videos/Comp_1_2.mp4',
-            thumbnail: 'assets/images/video-thumbnails/Comp_1_2.jpg'
+            thumbnail: 'assets/images/video-thumbnails/Comp_1_2.jpg',
+            title: 'Motion Graphics Reel',
+            caption: 'Cinema 4D, After Effects'
         },
         {
             type: 'video',
             src: 'assets/videos/Main6.mp4',
-            thumbnail: 'assets/images/video-thumbnails/Main6.jpg'
+            thumbnail: 'assets/images/video-thumbnails/Main6.jpg',
+            title: 'Abstract Visuals',
+            caption: 'Generative motion design | Cinema 4D'
         },
         {
             type: 'video',
             src: 'assets/videos/newwatcher_tvai_optimized.mp4',
-            thumbnail: 'assets/images/video-thumbnails/newwatcher_tvai_optimized.jpg'
+            thumbnail: 'assets/images/video-thumbnails/newwatcher_tvai_optimized.jpg',
+            title: 'The Watcher',
+            caption: 'AI-enhanced animation | Stable Diffusion'
         },
         {
             type: 'live',
             src: 'assets/videos/Snapchat-1817447126.mp4',
-            thumbnail: 'assets/images/video-thumbnails/Snapchat-1817447126.jpg'
+            thumbnail: 'assets/images/video-thumbnails/Snapchat-1817447126.jpg',
+            title: 'Live VJ Set',
+            caption: 'On-site performance'
         },
         {
             type: 'live',
             src: 'assets/videos/Snapchat-721211222.mp4',
-            thumbnail: 'assets/images/video-thumbnails/Snapchat-721211222.jpg'
+            thumbnail: 'assets/images/video-thumbnails/Snapchat-721211222.jpg',
+            title: 'Venue Visuals',
+            caption: 'LED wall content | Live performance'
         },
         {
             type: 'live',
             src: 'assets/videos/PXL_20250727_062750151.mp4',
-            thumbnail: 'assets/images/video-thumbnails/PXL_20250727_062750151.jpg'
+            thumbnail: 'assets/images/video-thumbnails/PXL_20250727_062750151.jpg',
+            title: 'Stage Projection',
+            caption: 'Live event production | 2025'
         },
         {
             type: 'video',
             src: 'assets/videos/orb.mp4',
-            thumbnail: 'assets/images/video-thumbnails/orb.jpg'
+            thumbnail: 'assets/images/video-thumbnails/orb.jpg',
+            title: 'Orb',
+            caption: 'Generative art | TouchDesigner'
         },
         {
             type: 'image',
             src: 'assets/images/eldritch0352.jpg',
-            thumbnail: 'assets/images/eldritch0352.jpg'
+            thumbnail: 'assets/images/eldritch0352.jpg',
+            title: 'Eldritch',
+            caption: 'AI-driven concept art | Stable Diffusion, ComfyUI'
         },
         {
             type: 'image',
             src: 'assets/images/hallway_Main0006_00000.jpg',
-            thumbnail: 'assets/images/hallway_Main0006_00000.jpg'
+            thumbnail: 'assets/images/hallway_Main0006_00000.jpg',
+            title: 'The Hallway',
+            caption: '3D environment | Cinema 4D'
         },
         {
             type: 'image',
             src: 'assets/images/thelostgirl2_00000.jpg',
-            thumbnail: 'assets/images/thelostgirl2_00000.jpg'
+            thumbnail: 'assets/images/thelostgirl2_00000.jpg',
+            title: 'The Lost Girl II',
+            caption: 'Character art | AI-assisted workflow'
         },
         {
             type: 'image',
             src: 'assets/images/thelostgirl4 (00000).jpg',
-            thumbnail: 'assets/images/thelostgirl4 (00000).jpg'
+            thumbnail: 'assets/images/thelostgirl4 (00000).jpg',
+            title: 'The Lost Girl IV',
+            caption: 'Character art | AI-assisted workflow'
         },
         {
             type: 'image',
             src: 'assets/images/woman_00000.jpg',
-            thumbnail: 'assets/images/woman_00000.jpg'
+            thumbnail: 'assets/images/woman_00000.jpg',
+            title: 'Portrait Study',
+            caption: 'AI-generated art | Custom pipeline'
         },
         {
             type: 'image',
             src: 'assets/images/PXL_20250727_062609308.NIGHT.RAW-01.COVER.jpg',
-            thumbnail: 'assets/images/PXL_20250727_062609308.NIGHT.RAW-01.COVER.jpg'
+            thumbnail: 'assets/images/PXL_20250727_062609308.NIGHT.RAW-01.COVER.jpg',
+            title: 'Night Event',
+            caption: 'Live event documentation | 2025'
         },
         {
             type: 'image',
             src: 'assets/images/newidk.jpg',
-            thumbnail: 'assets/images/newidk.jpg'
+            thumbnail: 'assets/images/newidk.jpg',
+            title: 'Emergence',
+            caption: 'AI-driven concept art | ComfyUI'
         },
         {
             type: 'image',
             src: 'assets/images/newidk2.jpg',
-            thumbnail: 'assets/images/newidk2.jpg'
+            thumbnail: 'assets/images/newidk2.jpg',
+            title: 'Convergence',
+            caption: 'AI-driven concept art | ComfyUI'
         },
         {
             type: 'image',
             src: 'assets/images/pretty.jpg',
-            thumbnail: 'assets/images/pretty.jpg'
+            thumbnail: 'assets/images/pretty.jpg',
+            title: 'Ethereal',
+            caption: 'Generative portrait | Custom SD pipeline'
         }
     ]
 };
@@ -760,15 +802,18 @@ function openModal(index) {
     modal.style.display = 'flex';
     modal.dataset.currentIndex = index;
 
-    if (item.type === 'video') {
+    const captionHtml = item.title ? `<div class="modal-caption"><h4>${item.title}</h4><p>${item.caption || ''}</p></div>` : '';
+
+    if (item.type === 'video' || item.type === 'live') {
         mediaContainer.innerHTML = `
             <video controls autoplay loop>
                 <source src="${item.src}" type="video/mp4">
                 Your browser does not support the video tag.
             </video>
+            ${captionHtml}
         `;
     } else {
-        mediaContainer.innerHTML = `<img src="${item.src}" alt="Artwork">`;
+        mediaContainer.innerHTML = `<img src="${item.src}" alt="${item.title || 'Artwork'}">${captionHtml}`;
     }
 
     document.body.style.overflow = 'hidden';

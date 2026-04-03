@@ -276,6 +276,64 @@ body::before {
     transform: scale(1.1);
 }
 
+/* Get a Quote CTA in nav */
+.nav-cta {
+    background: rgba(255, 255, 255, 0.95) !important;
+    color: #000 !important;
+    padding: 8px 18px !important;
+    border-radius: 4px;
+    font-weight: 600 !important;
+    letter-spacing: 1px !important;
+    transition: all 0.3s ease !important;
+}
+
+.nav-cta:hover {
+    background: #fff !important;
+    box-shadow: 0 0 20px rgba(255, 255, 255, 0.3);
+    transform: translateY(-1px);
+}
+
+.nav-cta::before,
+.nav-cta::after {
+    display: none !important;
+}
+
+/* Gallery caption in modal */
+.modal-caption {
+    text-align: center;
+    padding: 16px 20px;
+    max-width: 600px;
+    margin: 0 auto;
+}
+
+.modal-caption h4 {
+    font-family: var(--font-sans);
+    font-size: 16px;
+    font-weight: 500;
+    color: var(--color-text-primary);
+    margin-bottom: 4px;
+}
+
+.modal-caption p {
+    font-size: 13px;
+    color: var(--color-text-tertiary);
+    font-family: var(--font-mono);
+}
+
+/* Gallery CTA after section */
+.gallery-cta {
+    text-align: center;
+    margin-top: 60px;
+    padding: 40px 20px;
+}
+
+.gallery-cta p {
+    font-size: 16px;
+    color: var(--color-text-tertiary);
+    margin-bottom: 24px;
+    font-family: var(--font-sans);
+}
+
 .nav-social {
     display: flex;
     gap: 25px;
