@@ -168,7 +168,7 @@ let zoomDuration = 180; // 3 minutes for ultra-slow cinematic zoom
 function initThreeJS() {
     // Initialize pixelmap reference system
     pixelMap = new window.PixelMapReference();
-    console.log('PixelMap initialized:', pixelMap.exportSectionMap());
+    pixelMap.exportSectionMap();
 
     // Scene - removed fog for clearer space flight feel
     scene = new THREE.Scene();
@@ -261,10 +261,10 @@ function initThreeJS() {
 
     // Use GPGPU starfield for both mobile and desktop
     if (window.GPGPUStarfield) {
-        console.log('Initializing GPGPU starfield for', isMobile ? 'mobile' : 'desktop');
+        // Initialize GPGPU starfield
         gpgpuStarfield = new window.GPGPUStarfield(scene, camera, renderer);
     } else {
-        console.warn('GPGPUStarfield class not loaded, using fallback');
+        // GPGPUStarfield not loaded, using fallback
         createStarfield(); // Fallback
     }
 
@@ -858,16 +858,13 @@ function initGalleryFilters() {
 function initTeamSection() {
     const teamContainer = document.getElementById('team-container');
     if (!teamContainer) {
-        console.log('Team container not found on this page');
         return;
     }
 
     if (!portfolioConfig.teamMembers || portfolioConfig.teamMembers.length === 0) {
-        console.warn('No team members configured');
         return;
     }
 
-    console.log('Initializing team section with', portfolioConfig.teamMembers.length, 'members');
     new window.TeamSection('#team-container', portfolioConfig.teamMembers);
 }
 
@@ -947,18 +944,9 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    const contactForm = document.getElementById('contact-form');
-    if (contactForm) {
-        contactForm.addEventListener('submit', (e) => {
-            e.preventDefault();
-
-            const projectDescription = document.getElementById('project-description').value;
-            const senderEmail = document.getElementById('sender-email').value;
-            const senderName = document.getElementById('sender-name').value;
-
-            const mailtoLink = `mailto:relicvisuals404@gmail.com?subject=Project Inquiry from ${senderName}&body=${encodeURIComponent(projectDescription)}%0D%0A%0D%0AFrom: ${senderName}%0D%0AEmail: ${senderEmail}`;
-
-            window.location.href = mailtoLink;
-        });
+    // View Work button handler
+    const viewWorkBtn = document.getElementById('view-work-btn');
+    if (viewWorkBtn) {
+        viewWorkBtn.addEventListener('click', scrollToGallery);
     }
 });

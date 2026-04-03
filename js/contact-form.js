@@ -11,11 +11,11 @@ function initContactForm() {
         e.preventDefault();
 
         // Basic validation
-        const formData = new FormData(form);
-        const name = formData.get('name');
-        const email = formData.get('email');
-        const projectType = formData.get('projectType');
-        const message = formData.get('message');
+        const fields = new FormData(form);
+        const name = fields.get('name');
+        const email = fields.get('email');
+        const projectType = fields.get('projectType');
+        const message = fields.get('message');
 
         if (!name || !email || !projectType || !message) {
             showStatus('error', 'Please fill in all required fields.');
@@ -68,7 +68,6 @@ function initContactForm() {
         }, 10000);
     }
 
-    console.log('Contact form initialized');
 }
 
 // Initialize on DOM load

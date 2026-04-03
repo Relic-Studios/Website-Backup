@@ -1,17 +1,17 @@
 # Robots.txt for Relic Studios
-# https://relicstudios.netlify.app
+# https://relicstudios.xyz
 
 User-agent: *
 Allow: /
 
 # Sitemap location
-Sitemap: https://relicstudios.netlify.app/sitemap.xml
+Sitemap: https://relicstudios.xyz/sitemap.xml
 
-# Disallow admin/private directories (if any)
+# Disallow private directories
 Disallow: /node_modules/
-Disallow: /.netlify/
 Disallow: /dist/
 Disallow: /public/
+Disallow: /tools/
 
 # Allow search engines to crawl all public content
 Allow: /assets/

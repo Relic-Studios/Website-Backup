@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 
     <!-- Primary Meta Tags -->
     <title>Relic Studios | Motion Graphics & AI-Driven Visuals for Live Events</title>
@@ -34,7 +34,6 @@
     <link rel="apple-touch-icon" href="assets/images/relic.png">
 
     <!-- Google Analytics 4 -->
-    <!-- Replace G-WX0FS6PZRV with your actual GA4 Measurement ID -->
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-WX0FS6PZRV"></script>
     <script>
         window.dataLayer = window.dataLayer || [];
@@ -105,6 +104,10 @@
     }
     </script>
 
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
     <link rel="stylesheet" href="css/style.css">
     <link rel="stylesheet" href="css/contact-form.css">
     <link rel="stylesheet" href="css/gallery-optimized.css">
@@ -137,8 +140,9 @@
         <!-- Home Section -->
         <section id="home" class="section active">
             <img src="assets/images/relic.png" alt="RELIC Logo - Motion Graphics Studio" class="home-logo" width="400" height="400" fetchpriority="high">
+            <h1 class="sr-only">Relic Studios — Motion Graphics & AI-Driven Visuals for Live Events</h1>
             <p class="subtitle">Exploring The Intersection of Art and Technology</p>
-            <button class="cta-button" onclick="scrollToGallery()">View Work</button>
+            <button class="cta-button" id="view-work-btn">View Work</button>
         </section>
 
         <!-- Gallery Section -->
