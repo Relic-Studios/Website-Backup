@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Application Received - Relic Studios</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/get-involved.css">
+    <style>
+        .success-container {
+            max-width: 700px;
+            margin: 0 auto;
+            padding: 100px 40px;
+            text-align: center;
+        }
+
+        .success-icon {
+            font-size: 80px;
+            margin-bottom: 30px;
+            animation: fadeInScale 0.6s ease;
+        }
+
+        @keyframes fadeInScale {
+            from {
+                opacity: 0;
+                transform: scale(0.5);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        .success-container h1 {
+            font-size: 36px;
+            font-weight: 700;
+            color: var(--color-text-primary);
+            margin-bottom: 20px;
+            font-family: var(--font-mono);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .success-message {
+            font-size: 18px;
+            line-height: 1.8;
+            color: var(--color-text-secondary);
+            margin-bottom: 30px;
+            font-family: var(--font-sans);
+        }
+
+        .success-details {
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            padding: 30px;
+            margin: 40px 0;
+            text-align: left;
+        }
+
+        .success-details h3 {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--color-text-primary);
+            margin-bottom: 15px;
+            font-family: var(--font-mono);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .success-details ul {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .success-details li {
+            padding: 10px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            font-family: var(--font-sans);
+            color: var(--color-text-secondary);
+            position: relative;
+            padding-left: 25px;
+        }
+
+        .success-details li:last-child {
+            border-bottom: none;
+        }
+
+        .success-details li::before {
+            content: '▹';
+            position: absolute;
+            left: 0;
+            color: var(--color-accent);
+        }
+
+        .back-button {
+            display: inline-block;
+            padding: 15px 40px;
+            background: var(--color-text-primary);
+            color: var(--color-bg);
+            border: 1px solid var(--color-text-primary);
+            font-family: var(--font-mono);
+            font-size: 14px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: var(--transition-smooth);
+            text-decoration: none;
+            margin-top: 20px;
+        }
+
+        .back-button:hover {
+            background: transparent;
+            color: var(--color-text-primary);
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(255, 255, 255, 0.1);
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav id="main-nav">
+        <a href="index.html#home" class="logo" style="text-decoration: none; cursor: pointer;">
+            <img src="assets/images/relic.svg" alt="RELIC Logo" class="logo-image">
+        </a>
+        <ul class="nav-links">
+            <li><a href="index.html#home" class="nav-link">Home</a></li>
+            <li><a href="index.html#gallery" class="nav-link">Gallery</a></li>
+            <li><a href="index.html#contact" class="nav-link">Contact</a></li>
+            <li class="nav-divider"></li>
+            <li><a href="about.html" class="nav-link">About</a></li>
+            <li><a href="get-involved.html" class="nav-link active">Get Involved</a></li>
+        </ul>
+    </nav>
+
+    <!-- Three.js Canvas Container -->
+    <div id="canvas-container"></div>
+
+    <!-- Content Overlay -->
+    <div id="content-overlay">
+        <section class="section active">
+            <div class="success-container">
+                <div class="success-icon">✓</div>
+                <h1>Application Received</h1>
+                <p class="success-message">
+                    Thank you for your interest in joining Relic Studios. We've received your application and will carefully review your submission.
+                </p>
+
+                <div class="success-details">
+                    <h3>What Happens Next</h3>
+                    <ul>
+                        <li>We'll review your application within 5-7 business days</li>
+                        <li>You'll receive an email confirmation at the address you provided</li>
+                        <li>If we see a potential fit, we'll reach out to schedule a conversation</li>
+                        <li>This is the beginning of a dialogue, not a traditional hiring process</li>
+                    </ul>
+                </div>
+
+                <p class="success-message">
+                    Relic Studios grows through intention and shared values. We're building a collective where creativity sustains itself through collaboration, not competition.
+                </p>
+
+                <a href="get-involved.html" class="back-button">Back to Get Involved</a>
+            </div>
+        </section>
+    </div>
+
+    <!-- Three.js Library -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <!-- RGBE Loader for HDR files -->
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/RGBELoader.js"></script>
+    <!-- GLTF Loader for 3D models -->
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
+    <!-- GPU Computation Renderer for GPGPU -->
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/misc/GPUComputationRenderer.js"></script>
+
+    <!-- Scroll Camera Controller -->
+    <script src="js/scroll-camera-controller.js"></script>
+    <!-- Vortex Sphere -->
+    <script src="js/vortex-sphere.js"></script>
+    <!-- Enhanced GPGPU Particles -->
+    <script src="js/enhanced-gpgpu-particles.js"></script>
+    <!-- Pixelmap Reference System -->
+    <script src="js/pixelmap.js"></script>
+    <!-- Vortex Background Effect -->
+    <script src="js/vortex.js"></script>
+    <!-- Particle System -->
+    <script src="js/particle-system.js"></script>
+    <!-- GPGPU Starfield -->
+    <script src="js/gpgpu-starfield.js"></script>
+    <!-- Mobile-Optimized Starfield -->
+    <script src="js/mobile-starfield.js"></script>
+    <!-- Simple Bloom Composer (Reliable) -->
+    <script src="js/simple-bloom.js"></script>
+    <!-- Main JavaScript -->
+    <script src="js/main.js"></script>
+</body>
+</html>

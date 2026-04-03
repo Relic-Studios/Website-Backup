@@ -1,0 +1,41 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(fi)",
+      "Bash(done)",
+      "Bash(while read f)",
+      "Bash(do echo \"=== $f ===\")",
+      "Bash(git log:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git push)",
+      "Bash(netlify:*)",
+      "Bash(ffmpeg:*)",
+      "Bash(cp:*)",
+      "Read(//c/Users/zappa/Downloads/**)",
+      "Bash(test:*)",
+      "Bash(node:*)",
+      "Bash(npm run build:*)",
+      "Bash(npm run:*)",
+      "Bash(timeout 2 cmd /c \"echo Waiting for server...\")",
+      "Bash(exit 0)",
+      "Bash(npx http-server:*)",
+      "Bash(timeout:*)",
+      "WebSearch",
+      "Bash(npm install:*)",
+      "Bash(npx playwright install chromium)",
+      "WebFetch(domain:relicstudios.xyz)",
+      "WebFetch(domain:relicstudios.netlify.app)",
+      "Bash(findstr:*)",
+      "Bash(ipconfig /flushdns)",
+      "Bash(nslookup:*)",
+      "Bash(ping:*)",
+      "Bash(curl:*)",
+      "Bash(netsh winhttp show proxy:*)",
+      "WebFetch(domain:www.sslshopper.com)",
+      "WebFetch(domain:www.xml-sitemaps.com)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

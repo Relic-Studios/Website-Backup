@@ -1,0 +1,261 @@
+/* FocusCards Component - Aceternity UI Inspired */
+.focus-cards-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 30px;
+    width: 100%;
+    max-width: 1400px;
+    padding: 0;
+    position: relative;
+}
+
+.focus-card {
+    position: relative;
+    height: 300px;
+    border-radius: 12px;
+    overflow: hidden;
+    cursor: pointer;
+    transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+    border: 1px solid var(--color-border);
+    background: var(--color-surface);
+}
+
+.focus-card-image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+    filter: grayscale(0.3) brightness(0.8);
+    opacity: 0;
+}
+
+.focus-card:hover .focus-card-image {
+    transform: scale(1.08);
+    filter: grayscale(0) brightness(1);
+}
+
+/* Loading placeholder shimmer effect */
+.focus-card-placeholder {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, #1a1a1a 0%, #2a2a2a 50%, #1a1a1a 100%);
+    background-size: 200% 100%;
+    animation: loading-shimmer 1.5s infinite;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1;
+}
+
+@keyframes loading-shimmer {
+    0% { background-position: -200% 0; }
+    100% { background-position: 200% 0; }
+}
+
+/* Blur effect on non-hovered cards */
+.focus-cards-container:has(.focus-card:hover) .focus-card:not(:hover) {
+    filter: blur(4px) brightness(0.5);
+    transform: scale(0.98);
+    opacity: 0.6;
+}
+
+.focus-cards-container:has(.focus-card:hover) .focus-card:hover {
+    transform: scale(1.02) translateY(-8px);
+    filter: none;
+    box-shadow: 0 25px 50px rgba(0, 0, 0, 0.5),
+                0 0 0 2px var(--color-text-primary);
+    z-index: 10;
+}
+
+.focus-card-overlay {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    padding: 30px;
+    background: linear-gradient(
+        to top,
+        rgba(0, 0, 0, 0.9) 0%,
+        rgba(0, 0, 0, 0.6) 50%,
+        transparent 100%
+    );
+    transform: translateY(100%);
+    transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.focus-card:hover .focus-card-overlay {
+    transform: translateY(0);
+}
+
+.focus-card-title {
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--color-text-primary);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin: 0;
+    position: relative;
+    padding-left: 20px;
+    font-family: var(--font-mono);
+}
+
+.focus-card-title::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 12px;
+    height: 2px;
+    background: var(--color-text-primary);
+    transition: width 0.3s ease;
+}
+
+.focus-card:hover .focus-card-title::before {
+    width: 16px;
+}
+
+.focus-card-description {
+    font-size: 13px;
+    color: var(--color-text-secondary);
+    margin-top: 12px;
+    line-height: 1.6;
+    opacity: 0;
+    transform: translateY(10px);
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1) 0.1s;
+}
+
+.focus-card:hover .focus-card-description {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+/* Video and Live card specific styles */
+.focus-card.video-card::after,
+.focus-card.live-card::after {
+    content: '▶';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 60px;
+    height: 60px;
+    background: rgba(255, 255, 255, 0.2);
+    backdrop-filter: blur(10px);
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    color: var(--color-text-primary);
+    opacity: 0;
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    pointer-events: none;
+}
+
+.focus-card.video-card:hover::after,
+.focus-card.live-card:hover::after {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1.1);
+}
+
+/* Fade in animation */
+.focus-card {
+    opacity: 0;
+    animation: fadeInScale 0.8s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+@keyframes fadeInScale {
+    from {
+        opacity: 0;
+        transform: scale(0.95) translateY(30px);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+    }
+}
+
+/* Stagger animation delays */
+.focus-card:nth-child(1) { animation-delay: 0.1s; }
+.focus-card:nth-child(2) { animation-delay: 0.2s; }
+.focus-card:nth-child(3) { animation-delay: 0.3s; }
+.focus-card:nth-child(4) { animation-delay: 0.4s; }
+.focus-card:nth-child(5) { animation-delay: 0.5s; }
+.focus-card:nth-child(6) { animation-delay: 0.6s; }
+.focus-card:nth-child(7) { animation-delay: 0.7s; }
+.focus-card:nth-child(8) { animation-delay: 0.8s; }
+.focus-card:nth-child(n+9) { animation-delay: 0.9s; }
+
+/* Responsive adjustments */
+@media (max-width: 1024px) {
+    .focus-cards-container {
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 20px;
+    }
+
+    .focus-card {
+        height: 280px;
+    }
+}
+
+@media (max-width: 768px) {
+    .focus-cards-container {
+        grid-template-columns: 1fr;
+        gap: 25px;
+    }
+
+    .focus-card {
+        height: 280px;
+    }
+
+    /* Force image visibility on mobile */
+    .focus-card-image {
+        opacity: 1 !important;
+    }
+
+    /* Disable blur effect on mobile for performance */
+    .focus-cards-container:has(.focus-card:hover) .focus-card:not(:hover) {
+        filter: brightness(0.7);
+        transform: none;
+    }
+
+    .focus-card-overlay {
+        transform: translateY(0);
+        background: linear-gradient(
+            to top,
+            rgba(0, 0, 0, 0.8) 0%,
+            transparent 60%
+        );
+        padding: 20px;
+    }
+
+    .focus-card-description {
+        opacity: 1;
+        transform: translateY(0);
+        font-size: 12px;
+    }
+}
+
+@media (max-width: 480px) {
+    .focus-card {
+        height: 240px;
+    }
+
+    /* Force image visibility on small mobile */
+    .focus-card-image {
+        opacity: 1 !important;
+    }
+
+    .focus-card-title {
+        font-size: 16px;
+    }
+
+    .focus-card-overlay {
+        padding: 15px;
+    }
+}

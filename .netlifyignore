@@ -1,0 +1,11 @@
+# Exclude reserved Windows filename
+nul
+
+# Exclude development files
+node_modules/
+.claude/
+.git/
+
+# Exclude backup folders only
+assets/videos/optimized/
+assets/videos/original_backup/

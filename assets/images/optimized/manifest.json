@@ -1,0 +1,756 @@
+[
+  {
+    "original": "assets/images/woman_00000.jpg",
+    "originalSize": 2338338,
+    "dimensions": {
+      "width": 2160,
+      "height": 3840
+    },
+    "optimized": [
+      {
+        "size": "thumb",
+        "width": 400,
+        "webp": {
+          "path": "assets/images/optimized/woman_00000-thumb.webp",
+          "size": 49276
+        },
+        "jpg": {
+          "path": "assets/images/optimized/woman_00000-thumb.jpg",
+          "size": 57733
+        }
+      },
+      {
+        "size": "medium",
+        "width": 800,
+        "webp": {
+          "path": "assets/images/optimized/woman_00000-medium.webp",
+          "size": 223584
+        },
+        "jpg": {
+          "path": "assets/images/optimized/woman_00000-medium.jpg",
+          "size": 258303
+        }
+      },
+      {
+        "size": "large",
+        "width": 1200,
+        "webp": {
+          "path": "assets/images/optimized/woman_00000-large.webp",
+          "size": 433420
+        },
+        "jpg": {
+          "path": "assets/images/optimized/woman_00000-large.jpg",
+          "size": 529967
+        }
+      },
+      {
+        "size": "full",
+        "width": 1920,
+        "webp": {
+          "path": "assets/images/optimized/woman_00000-full.webp",
+          "size": 1143274
+        },
+        "jpg": {
+          "path": "assets/images/optimized/woman_00000-full.jpg",
+          "size": 1408563
+        }
+      }
+    ]
+  },
+  {
+    "original": "assets/images/thelostgirl4 (00000).jpg",
+    "originalSize": 2944422,
+    "dimensions": {
+      "width": 3037,
+      "height": 5400
+    },
+    "optimized": [
+      {
+        "size": "thumb",
+        "width": 400,
+        "webp": {
+          "path": "assets/images/optimized/thelostgirl4 (00000)-thumb.webp",
+          "size": 39266
+        },
+        "jpg": {
+          "path": "assets/images/optimized/thelostgirl4 (00000)-thumb.jpg",
+          "size": 47109
+        }
+      },
+      {
+        "size": "medium",
+        "width": 800,
+        "webp": {
+          "path": "assets/images/optimized/thelostgirl4 (00000)-medium.webp",
+          "size": 147044
+        },
+        "jpg": {
+          "path": "assets/images/optimized/thelostgirl4 (00000)-medium.jpg",
+          "size": 181605
+        }
+      },
+      {
+        "size": "large",
+        "width": 1200,
+        "webp": {
+          "path": "assets/images/optimized/thelostgirl4 (00000)-large.webp",
+          "size": 272794
+        },
+        "jpg": {
+          "path": "assets/images/optimized/thelostgirl4 (00000)-large.jpg",
+          "size": 360026
+        }
+      },
+      {
+        "size": "full",
+        "width": 1920,
+        "webp": {
+          "path": "assets/images/optimized/thelostgirl4 (00000)-full.webp",
+          "size": 729426
+        },
+        "jpg": {
+          "path": "assets/images/optimized/thelostgirl4 (00000)-full.jpg",
+          "size": 989145
+        }
+      }
+    ]
+  },
+  {
+    "original": "assets/images/thelostgirl2_00000.jpg",
+    "originalSize": 3783565,
+    "dimensions": {
+      "width": 3240,
+      "height": 4050
+    },
+    "optimized": [
+      {
+        "size": "thumb",
+        "width": 400,
+        "webp": {
+          "path": "assets/images/optimized/thelostgirl2_00000-thumb.webp",
+          "size": 41580
+        },
+        "jpg": {
+          "path": "assets/images/optimized/thelostgirl2_00000-thumb.jpg",
+          "size": 46059
+        }
+      },
+      {
+        "size": "medium",
+        "width": 800,
+        "webp": {
+          "path": "assets/images/optimized/thelostgirl2_00000-medium.webp",
+          "size": 163506
+        },
+        "jpg": {
+          "path": "assets/images/optimized/thelostgirl2_00000-medium.jpg",
+          "size": 183280
+        }
+      },
+      {
+        "size": "large",
+        "width": 1200,
+        "webp": {
+          "path": "assets/images/optimized/thelostgirl2_00000-large.webp",
+          "size": 321110
+        },
+        "jpg": {
+          "path": "assets/images/optimized/thelostgirl2_00000-large.jpg",
+          "size": 373398
+        }
+      },
+      {
+        "size": "full",
+        "width": 1920,
+        "webp": {
+          "path": "assets/images/optimized/thelostgirl2_00000-full.webp",
+          "size": 863086
+        },
+        "jpg": {
+          "path": "assets/images/optimized/thelostgirl2_00000-full.jpg",
+          "size": 1046564
+        }
+      }
+    ]
+  },
+  {
+    "original": "assets/images/PXL_20250727_062609308.NIGHT.RAW-01.COVER.jpg",
+    "originalSize": 4705780,
+    "dimensions": {
+      "width": 8160,
+      "height": 4590
+    },
+    "optimized": [
+      {
+        "size": "thumb",
+        "width": 400,
+        "webp": {
+          "path": "assets/images/optimized/PXL_20250727_062609308.NIGHT.RAW-01.COVER-thumb.webp",
+          "size": 24056
+        },
+        "jpg": {
+          "path": "assets/images/optimized/PXL_20250727_062609308.NIGHT.RAW-01.COVER-thumb.jpg",
+          "size": 26127
+        }
+      },
+      {
+        "size": "medium",
+        "width": 800,
+        "webp": {
+          "path": "assets/images/optimized/PXL_20250727_062609308.NIGHT.RAW-01.COVER-medium.webp",
+          "size": 85512
+        },
+        "jpg": {
+          "path": "assets/images/optimized/PXL_20250727_062609308.NIGHT.RAW-01.COVER-medium.jpg",
+          "size": 97295
+        }
+      },
+      {
+        "size": "large",
+        "width": 1200,
+        "webp": {
+          "path": "assets/images/optimized/PXL_20250727_062609308.NIGHT.RAW-01.COVER-large.webp",
+          "size": 161542
+        },
+        "jpg": {
+          "path": "assets/images/optimized/PXL_20250727_062609308.NIGHT.RAW-01.COVER-large.jpg",
+          "size": 193922
+        }
+      },
+      {
+        "size": "full",
+        "width": 1920,
+        "webp": {
+          "path": "assets/images/optimized/PXL_20250727_062609308.NIGHT.RAW-01.COVER-full.webp",
+          "size": 430402
+        },
+        "jpg": {
+          "path": "assets/images/optimized/PXL_20250727_062609308.NIGHT.RAW-01.COVER-full.jpg",
+          "size": 512517
+        }
+      }
+    ]
+  },
+  {
+    "original": "assets/images/hallway_Main0006_00000.jpg",
+    "originalSize": 1641072,
+    "dimensions": {
+      "width": 2160,
+      "height": 3840
+    },
+    "optimized": [
+      {
+        "size": "thumb",
+        "width": 400,
+        "webp": {
+          "path": "assets/images/optimized/hallway_Main0006_00000-thumb.webp",
+          "size": 48936
+        },
+        "jpg": {
+          "path": "assets/images/optimized/hallway_Main0006_00000-thumb.jpg",
+          "size": 60139
+        }
+      },
+      {
+        "size": "medium",
+        "width": 800,
+        "webp": {
+          "path": "assets/images/optimized/hallway_Main0006_00000-medium.webp",
+          "size": 176162
+        },
+        "jpg": {
+          "path": "assets/images/optimized/hallway_Main0006_00000-medium.jpg",
+          "size": 229502
+        }
+      },
+      {
+        "size": "large",
+        "width": 1200,
+        "webp": {
+          "path": "assets/images/optimized/hallway_Main0006_00000-large.webp",
+          "size": 315766
+        },
+        "jpg": {
+          "path": "assets/images/optimized/hallway_Main0006_00000-large.jpg",
+          "size": 438377
+        }
+      },
+      {
+        "size": "full",
+        "width": 1920,
+        "webp": {
+          "path": "assets/images/optimized/hallway_Main0006_00000-full.webp",
+          "size": 775230
+        },
+        "jpg": {
+          "path": "assets/images/optimized/hallway_Main0006_00000-full.jpg",
+          "size": 1140535
+        }
+      }
+    ]
+  },
+  {
+    "original": "assets/images/eldritch0352.jpg",
+    "originalSize": 4058429,
+    "dimensions": {
+      "width": 5334,
+      "height": 3000
+    },
+    "optimized": [
+      {
+        "size": "thumb",
+        "width": 400,
+        "webp": {
+          "path": "assets/images/optimized/eldritch0352-thumb.webp",
+          "size": 17938
+        },
+        "jpg": {
+          "path": "assets/images/optimized/eldritch0352-thumb.jpg",
+          "size": 20577
+        }
+      },
+      {
+        "size": "medium",
+        "width": 800,
+        "webp": {
+          "path": "assets/images/optimized/eldritch0352-medium.webp",
+          "size": 74214
+        },
+        "jpg": {
+          "path": "assets/images/optimized/eldritch0352-medium.jpg",
+          "size": 84239
+        }
+      },
+      {
+        "size": "large",
+        "width": 1200,
+        "webp": {
+          "path": "assets/images/optimized/eldritch0352-large.webp",
+          "size": 146280
+        },
+        "jpg": {
+          "path": "assets/images/optimized/eldritch0352-large.jpg",
+          "size": 174731
+        }
+      },
+      {
+        "size": "full",
+        "width": 1920,
+        "webp": {
+          "path": "assets/images/optimized/eldritch0352-full.webp",
+          "size": 429760
+        },
+        "jpg": {
+          "path": "assets/images/optimized/eldritch0352-full.jpg",
+          "size": 511498
+        }
+      }
+    ]
+  },
+  {
+    "original": "assets/images/woman_00000.png",
+    "originalSize": 10213546,
+    "dimensions": {
+      "width": 2160,
+      "height": 3840
+    },
+    "optimized": [
+      {
+        "size": "thumb",
+        "width": 400,
+        "webp": {
+          "path": "assets/images/optimized/woman_00000-thumb.webp",
+          "size": 51540
+        },
+        "jpg": {
+          "path": "assets/images/optimized/woman_00000-thumb.jpg",
+          "size": 59588
+        }
+      },
+      {
+        "size": "medium",
+        "width": 800,
+        "webp": {
+          "path": "assets/images/optimized/woman_00000-medium.webp",
+          "size": 225866
+        },
+        "jpg": {
+          "path": "assets/images/optimized/woman_00000-medium.jpg",
+          "size": 259701
+        }
+      },
+      {
+        "size": "large",
+        "width": 1200,
+        "webp": {
+          "path": "assets/images/optimized/woman_00000-large.webp",
+          "size": 448392
+        },
+        "jpg": {
+          "path": "assets/images/optimized/woman_00000-large.jpg",
+          "size": 535544
+        }
+      },
+      {
+        "size": "full",
+        "width": 1920,
+        "webp": {
+          "path": "assets/images/optimized/woman_00000-full.webp",
+          "size": 1157220
+        },
+        "jpg": {
+          "path": "assets/images/optimized/woman_00000-full.jpg",
+          "size": 1430353
+        }
+      }
+    ]
+  },
+  {
+    "original": "assets/images/touchdesignerimg.png",
+    "originalSize": 376195,
+    "dimensions": {
+      "width": 2538,
+      "height": 1348
+    },
+    "optimized": [
+      {
+        "size": "thumb",
+        "width": 400,
+        "webp": {
+          "path": "assets/images/optimized/touchdesignerimg-thumb.webp",
+          "size": 5684
+        },
+        "jpg": {
+          "path": "assets/images/optimized/touchdesignerimg-thumb.jpg",
+          "size": 9781
+        }
+      },
+      {
+        "size": "medium",
+        "width": 800,
+        "webp": {
+          "path": "assets/images/optimized/touchdesignerimg-medium.webp",
+          "size": 20524
+        },
+        "jpg": {
+          "path": "assets/images/optimized/touchdesignerimg-medium.jpg",
+          "size": 39031
+        }
+      },
+      {
+        "size": "large",
+        "width": 1200,
+        "webp": {
+          "path": "assets/images/optimized/touchdesignerimg-large.webp",
+          "size": 38292
+        },
+        "jpg": {
+          "path": "assets/images/optimized/touchdesignerimg-large.jpg",
+          "size": 77712
+        }
+      },
+      {
+        "size": "full",
+        "width": 1920,
+        "webp": {
+          "path": "assets/images/optimized/touchdesignerimg-full.webp",
+          "size": 94762
+        },
+        "jpg": {
+          "path": "assets/images/optimized/touchdesignerimg-full.jpg",
+          "size": 209559
+        }
+      }
+    ]
+  },
+  {
+    "original": "assets/images/thelostgirl4 (00000).png",
+    "originalSize": 22364633,
+    "dimensions": {
+      "width": 3037,
+      "height": 5400
+    },
+    "optimized": [
+      {
+        "size": "thumb",
+        "width": 400,
+        "webp": {
+          "path": "assets/images/optimized/thelostgirl4 (00000)-thumb.webp",
+          "size": 39910
+        },
+        "jpg": {
+          "path": "assets/images/optimized/thelostgirl4 (00000)-thumb.jpg",
+          "size": 47448
+        }
+      },
+      {
+        "size": "medium",
+        "width": 800,
+        "webp": {
+          "path": "assets/images/optimized/thelostgirl4 (00000)-medium.webp",
+          "size": 149158
+        },
+        "jpg": {
+          "path": "assets/images/optimized/thelostgirl4 (00000)-medium.jpg",
+          "size": 183426
+        }
+      },
+      {
+        "size": "large",
+        "width": 1200,
+        "webp": {
+          "path": "assets/images/optimized/thelostgirl4 (00000)-large.webp",
+          "size": 274868
+        },
+        "jpg": {
+          "path": "assets/images/optimized/thelostgirl4 (00000)-large.jpg",
+          "size": 361122
+        }
+      },
+      {
+        "size": "full",
+        "width": 1920,
+        "webp": {
+          "path": "assets/images/optimized/thelostgirl4 (00000)-full.webp",
+          "size": 738496
+        },
+        "jpg": {
+          "path": "assets/images/optimized/thelostgirl4 (00000)-full.jpg",
+          "size": 1000077
+        }
+      }
+    ]
+  },
+  {
+    "original": "assets/images/thelostgirl2_00000.png",
+    "originalSize": 32748053,
+    "dimensions": {
+      "width": 3240,
+      "height": 4050
+    },
+    "optimized": [
+      {
+        "size": "thumb",
+        "width": 400,
+        "webp": {
+          "path": "assets/images/optimized/thelostgirl2_00000-thumb.webp",
+          "size": 40202
+        },
+        "jpg": {
+          "path": "assets/images/optimized/thelostgirl2_00000-thumb.jpg",
+          "size": 45916
+        }
+      },
+      {
+        "size": "medium",
+        "width": 800,
+        "webp": {
+          "path": "assets/images/optimized/thelostgirl2_00000-medium.webp",
+          "size": 159698
+        },
+        "jpg": {
+          "path": "assets/images/optimized/thelostgirl2_00000-medium.jpg",
+          "size": 182590
+        }
+      },
+      {
+        "size": "large",
+        "width": 1200,
+        "webp": {
+          "path": "assets/images/optimized/thelostgirl2_00000-large.webp",
+          "size": 313636
+        },
+        "jpg": {
+          "path": "assets/images/optimized/thelostgirl2_00000-large.jpg",
+          "size": 373543
+        }
+      },
+      {
+        "size": "full",
+        "width": 1920,
+        "webp": {
+          "path": "assets/images/optimized/thelostgirl2_00000-full.webp",
+          "size": 872356
+        },
+        "jpg": {
+          "path": "assets/images/optimized/thelostgirl2_00000-full.jpg",
+          "size": 1049196
+        }
+      }
+    ]
+  },
+  {
+    "original": "assets/images/relic.png",
+    "originalSize": 199793,
+    "dimensions": {
+      "width": 1920,
+      "height": 1080
+    },
+    "optimized": [
+      {
+        "size": "thumb",
+        "width": 400,
+        "webp": {
+          "path": "assets/images/optimized/relic-thumb.webp",
+          "size": 23696
+        },
+        "jpg": {
+          "path": "assets/images/optimized/relic-thumb.jpg",
+          "size": 11557
+        }
+      },
+      {
+        "size": "medium",
+        "width": 800,
+        "webp": {
+          "path": "assets/images/optimized/relic-medium.webp",
+          "size": 61670
+        },
+        "jpg": {
+          "path": "assets/images/optimized/relic-medium.jpg",
+          "size": 37281
+        }
+      },
+      {
+        "size": "large",
+        "width": 1200,
+        "webp": {
+          "path": "assets/images/optimized/relic-large.webp",
+          "size": 99550
+        },
+        "jpg": {
+          "path": "assets/images/optimized/relic-large.jpg",
+          "size": 67694
+        }
+      },
+      {
+        "size": "full",
+        "width": 1920,
+        "webp": {
+          "path": "assets/images/optimized/relic-full.webp",
+          "size": 168586
+        },
+        "jpg": {
+          "path": "assets/images/optimized/relic-full.jpg",
+          "size": 160234
+        }
+      }
+    ]
+  },
+  {
+    "original": "assets/images/hallway_Main0006_00000.png",
+    "originalSize": 10332796,
+    "dimensions": {
+      "width": 2160,
+      "height": 3840
+    },
+    "optimized": [
+      {
+        "size": "thumb",
+        "width": 400,
+        "webp": {
+          "path": "assets/images/optimized/hallway_Main0006_00000-thumb.webp",
+          "size": 50974
+        },
+        "jpg": {
+          "path": "assets/images/optimized/hallway_Main0006_00000-thumb.jpg",
+          "size": 61677
+        }
+      },
+      {
+        "size": "medium",
+        "width": 800,
+        "webp": {
+          "path": "assets/images/optimized/hallway_Main0006_00000-medium.webp",
+          "size": 177804
+        },
+        "jpg": {
+          "path": "assets/images/optimized/hallway_Main0006_00000-medium.jpg",
+          "size": 230971
+        }
+      },
+      {
+        "size": "large",
+        "width": 1200,
+        "webp": {
+          "path": "assets/images/optimized/hallway_Main0006_00000-large.webp",
+          "size": 321212
+        },
+        "jpg": {
+          "path": "assets/images/optimized/hallway_Main0006_00000-large.jpg",
+          "size": 443624
+        }
+      },
+      {
+        "size": "full",
+        "width": 1920,
+        "webp": {
+          "path": "assets/images/optimized/hallway_Main0006_00000-full.webp",
+          "size": 791688
+        },
+        "jpg": {
+          "path": "assets/images/optimized/hallway_Main0006_00000-full.jpg",
+          "size": 1164469
+        }
+      }
+    ]
+  },
+  {
+    "original": "assets/images/eldritch0352_original.png",
+    "originalSize": 75391539,
+    "dimensions": {
+      "width": 5334,
+      "height": 3000
+    },
+    "optimized": [
+      {
+        "size": "thumb",
+        "width": 400,
+        "webp": {
+          "path": "assets/images/optimized/eldritch0352_original-thumb.webp",
+          "size": 18034
+        },
+        "jpg": {
+          "path": "assets/images/optimized/eldritch0352_original-thumb.jpg",
+          "size": 20767
+        }
+      },
+      {
+        "size": "medium",
+        "width": 800,
+        "webp": {
+          "path": "assets/images/optimized/eldritch0352_original-medium.webp",
+          "size": 75330
+        },
+        "jpg": {
+          "path": "assets/images/optimized/eldritch0352_original-medium.jpg",
+          "size": 84554
+        }
+      },
+      {
+        "size": "large",
+        "width": 1200,
+        "webp": {
+          "path": "assets/images/optimized/eldritch0352_original-large.webp",
+          "size": 144516
+        },
+        "jpg": {
+          "path": "assets/images/optimized/eldritch0352_original-large.jpg",
+          "size": 173924
+        }
+      },
+      {
+        "size": "full",
+        "width": 1920,
+        "webp": {
+          "path": "assets/images/optimized/eldritch0352_original-full.webp",
+          "size": 428632
+        },
+        "jpg": {
+          "path": "assets/images/optimized/eldritch0352_original-full.jpg",
+          "size": 510535
+        }
+      }
+    ]
+  }
+]

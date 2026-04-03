@@ -1,0 +1,43 @@
+{
+  "name": "relic-studios-website",
+  "version": "1.1.0",
+  "type": "module",
+  "description": "Relic Studios - Motion Graphics & AI-Driven Visuals Portfolio",
+  "main": "index.js",
+  "scripts": {
+    "dev": "npx http-server . -p 8001 -o",
+    "start": "npx http-server . -p 8001",
+    "optimize:images": "node tools/optimize-images.cjs",
+    "optimize:videos": "node tools/optimize-videos.cjs",
+    "optimize:all": "npm run optimize:images && npm run optimize:videos",
+    "lighthouse": "npx lhci autorun",
+    "lighthouse:report": "npx lhci autorun --collect.startServerCommand='' --collect.url=https://relicstudios.xyz",
+    "audit": "npx lighthouse https://relicstudios.xyz --output=html --output-path=./lighthouse-reports/audit.html",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@vitejs/plugin-react": "^5.0.4",
+    "autoprefixer": "^10.4.21",
+    "glob": "^13.0.0",
+    "playwright": "^1.57.0",
+    "postcss": "^8.5.6",
+    "sharp": "^0.34.5",
+    "tailwindcss": "^4.1.15",
+    "vite": "^7.1.11"
+  },
+  "dependencies": {
+    "@react-three/drei": "^10.7.6",
+    "@react-three/fiber": "^9.4.0",
+    "@tailwindcss/postcss": "^4.1.15",
+    "clsx": "^2.1.1",
+    "framer-motion": "^12.23.24",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0",
+    "simplex-noise": "^4.0.3",
+    "tailwind-merge": "^3.3.1",
+    "three": "^0.180.0"
+  }
+}

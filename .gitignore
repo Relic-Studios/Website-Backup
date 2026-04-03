@@ -1,0 +1,48 @@
+# Dependencies
+node_modules/
+package-lock.json
+
+# Build outputs (keep source files only)
+public/
+dist/
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Logs
+*.log
+npm-debug.log*
+
+# Environment variables
+.env
+.env.local
+.env.production
+
+# Netlify
+.netlify/
+
+# Large media files (keep locally, too big for GitHub)
+*.hdr
+*.mov
+assets/videos/original_backup/
+assets/videos/Showreel/rxshowreel.mp4
+assets/images/eldritch0352_original.png
+assets/images/newidk.png
+assets/images/newidk2.png
+assets/images/pretty.png
+assets/models/scorpion.glb
+
+# Windows artifacts
+nul
+
+# Test artifacts
+test-screenshots/
