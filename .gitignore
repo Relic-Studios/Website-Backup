@@ -46,3 +46,6 @@ nul
 
 # Test artifacts
 test-screenshots/
+
+# EGM design and review working files (never publish: the repo root is the live site)
+work/

@@ -1,0 +1,110 @@
+<!--meta
+{
+  "out": "projects/atlas-voice.html",
+  "id": "project",
+  "nav": "work",
+  "hud": "ATLAS",
+  "slug": "atlas-voice",
+  "canonical": "/projects/atlas-voice.html",
+  "sitemapOrder": 15,
+  "form": "ring",
+  "ogType": "article",
+  "author": "Aidan Poole",
+  "title": "ATLAS Voice by Aidan Poole | Relic Studios",
+  "description": "ATLAS Voice is a Windows application for AI voice agents in group conversations, created by Aidan Poole (Relic) and published by Relic Studios. Free to use, closed source.",
+  "crumbs": [["Work", "{{root}}projects/"], ["ATLAS Voice", ""]]
+}
+-->
+<!--head
+<script type="application/ld+json">
+{
+    "@context": "https://schema.org",
+    "@graph": [
+        {
+            "@type": "SoftwareApplication",
+            "@id": "{{site}}/projects/atlas-voice.html#software",
+            "name": "ATLAS",
+            "alternateName": ["ATLAS Voice", "ATLAS-Voice"],
+            "url": "{{site}}/projects/atlas-voice.html",
+            "description": "ATLAS is a Windows application for AI voice agents in group conversations, with speaker identification, turn-taking and selectable voices. It supports local model inference on suitable hardware and an optional API-provider mode.",
+            "applicationCategory": "CommunicationApplication",
+            "operatingSystem": "Windows 10, Windows 11",
+            "creator": {
+                "@type": "Person",
+                "@id": "{{site}}/#aidan-poole",
+                "name": "Aidan Poole",
+                "url": "{{site}}/aidan-poole.html"
+            },
+            "publisher": {
+                "@type": "Organization",
+                "@id": "{{site}}/#organization",
+                "name": "Relic Studios",
+                "url": "{{site}}/"
+            },
+            "sameAs": ["https://github.com/Relic-Studios/ATLAS-Voice"],
+            "downloadUrl": "https://github.com/Relic-Studios/ATLAS-Voice/releases/latest",
+            "license": "https://github.com/Relic-Studios/ATLAS-Voice/blob/main/LICENSE",
+            "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" }
+        },
+        {
+            "@type": "BreadcrumbList",
+            "itemListElement": [
+                { "@type": "ListItem", "position": 1, "name": "Home", "item": "{{site}}/" },
+                { "@type": "ListItem", "position": 2, "name": "Work", "item": "{{site}}/projects/" },
+                { "@type": "ListItem", "position": 3, "name": "ATLAS Voice", "item": "{{site}}/projects/atlas-voice.html" }
+            ]
+        }
+    ]
+}
+</script>
+head-->
+
+<section class="page-hero" data-section="ATLAS" data-form="ring">
+    <div class="wrap">
+        {{> crumbs}}
+        <p class="kicker rise" style="--i:0"><i>06 / 07</i><span>Software</span></p>
+        <h1 class="h1" data-split>ATLAS <span class="goth" data-keep>Voice</span></h1>
+        <p class="byline" data-reveal>Created by <a href="{{root}}aidan-poole.html">Aidan Poole (Relic)</a>. Published by <a href="{{root}}about.html">Relic Studios</a>.</p>
+        <div class="btns" data-reveal>
+            <a class="btn btn--solid" href="https://github.com/Relic-Studios/ATLAS-Voice/releases/latest" rel="noopener"><span>Download for Windows</span>{{> icon name=right}}</a>
+            <a class="btn" href="https://github.com/Relic-Studios/ATLAS-Voice#see-it-in-action" rel="noopener"><span>Watch the demo</span></a>
+        </div>
+    </div>
+</section>
+
+<section class="sec sec--tight" data-section="ATLAS" data-form="ring">
+    <div class="wrap split-cols">
+        <div data-reveal>
+            <div class="prose prose--lead">
+                <p>ATLAS Voice is a Windows application created by Aidan Poole through Relic Studios for AI voice agents in group conversations. Its published features include speaker awareness, conversational turn-taking, streaming speech and configurable voices. Local-model and provider-backed modes are described in the official release documentation. ATLAS 1.0 is free to use and closed source; the public GitHub repository hosts its official releases.</p>
+                <p>The application and its documentation use the name ATLAS.</p>
+            </div>
+            <div class="prose" style="margin-top: clamp(40px, 5vw, 72px)">
+                <h2 class="h3">What it does</h2>
+                <ul class="arrows">
+                    <li>Joins a group call, answers when it is addressed and stays quiet when it is not.</li>
+                    <li>Labels each speaker and learns names from introductions.</li>
+                    <li>Starts speaking while the rest of the reply is still being generated.</li>
+                    <li>Lets you create your own agent from a short voice clip and a description of its personality.</li>
+                    <li>Runs the AI model on your own NVIDIA graphics card, or uses an API provider you choose for the model.</li>
+                    <li>Ships with optional plugins that stay off until you turn them on.</li>
+                    <li>Needs no account and sends no telemetry.</li>
+                </ul>
+                <p>System requirements and installation steps are in the <a href="https://github.com/Relic-Studios/ATLAS-Voice" rel="noopener">official README</a>.</p>
+            </div>
+        </div>
+        <aside data-reveal>
+            <dl class="spec frame">
+                <div class="spec__row"><dt>Creator</dt><dd><a href="{{root}}aidan-poole.html">Aidan Poole</a></dd></div>
+                <div class="spec__row"><dt>Publisher</dt><dd>Relic Studios</dd></div>
+                <div class="spec__row"><dt>Platform</dt><dd>Windows 10 and 11</dd></div>
+                <div class="spec__row"><dt>Price</dt><dd>Free to use</dd></div>
+                <div class="spec__row"><dt>Source code</dt><dd>Closed source</dd></div>
+                <div class="spec__row"><dt>Releases</dt><dd><a href="https://github.com/Relic-Studios/ATLAS-Voice" rel="noopener">GitHub</a></dd></div>
+                <div class="spec__row"><dt>License</dt><dd><a href="https://github.com/Relic-Studios/ATLAS-Voice/blob/main/LICENSE" rel="noopener">ATLAS License</a></dd></div>
+            </dl>
+        </aside>
+    </div>
+</section>
+
+{{> pager}}

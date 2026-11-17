@@ -5,6 +5,9 @@
   "description": "Relic Studios - Motion Graphics & AI-Driven Visuals Portfolio",
   "main": "index.js",
   "scripts": {
+    "build": "node tools/build.cjs",
+    "check": "node tools/build.cjs && node tools/check-pages.cjs",
+    "thumbs": "node tools/make-thumbs.cjs",
     "dev": "npx http-server . -p 8001 -o",
     "start": "npx http-server . -p 8001",
     "optimize:images": "node tools/optimize-images.cjs",
@@ -13,7 +16,7 @@
     "lighthouse": "npx lhci autorun",
     "lighthouse:report": "npx lhci autorun --collect.startServerCommand='' --collect.url=https://relicstudios.xyz",
     "audit": "npx lighthouse https://relicstudios.xyz --output=html --output-path=./lighthouse-reports/audit.html",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "npm run check"
   },
   "keywords": [],
   "author": "",

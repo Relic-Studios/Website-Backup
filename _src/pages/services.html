@@ -1,0 +1,181 @@
+<!--meta
+{
+  "out": "services.html",
+  "id": "services",
+  "nav": "services",
+  "hud": "Services",
+  "canonical": "/services.html",
+  "sitemapOrder": 3,
+  "form": "ring",
+  "title": "Services | Relic Studios - Motion Graphics & Live Event Visuals",
+  "description": "Professional motion graphics, live VJ performances, LED wall content, interactive installations, and AI-driven visuals for festivals, nightclubs, and brands.",
+  "keywords": "hire VJ, event visuals, festival visuals agency, LED wall content, live performance visuals, motion graphics studio, TouchDesigner artist",
+  "crumbs": [["Services", "services.html"]]
+}
+-->
+<!--head
+<script type="application/ld+json">
+{
+    "@context": "https://schema.org",
+    "@graph": [
+        {
+            "@type": "WebPage",
+            "@id": "{{site}}/services.html#webpage",
+            "url": "{{site}}/services.html",
+            "name": "Services | Relic Studios",
+            "isPartOf": { "@id": "{{site}}/#website" },
+            "about": { "@id": "{{site}}/#organization" }
+        },
+        {
+            "@type": "BreadcrumbList",
+            "itemListElement": [
+                { "@type": "ListItem", "position": 1, "name": "Home", "item": "{{site}}/" },
+                { "@type": "ListItem", "position": 2, "name": "Services", "item": "{{site}}/services.html" }
+            ]
+        }
+    ]
+}
+</script>
+head-->
+
+<section class="page-hero" data-section="Services" data-form="ring">
+    <div class="wrap">
+        {{> crumbs}}
+        <p class="kicker rise" style="--i:0"><i>00</i><span>Services</span></p>
+        <h1 class="h1" data-split>What We <span class="goth" data-keep>Do</span></h1>
+        <p class="lede" data-reveal>We create immersive visual experiences for live events, festivals, and brands. From concept to execution, on-site or remote.</p>
+        <div class="btns" data-reveal>
+            <a class="btn btn--solid" href="#inquiry"><span>Start a project</span>{{> icon name=right}}</a>
+            <a class="btn" href="{{root}}projects/"><span>See the work</span></a>
+        </div>
+    </div>
+</section>
+
+<section class="sec sec--tight" id="services" data-section="Services" data-form="ring">
+    <div class="wrap">
+        {{> services_full}}
+    </div>
+</section>
+
+<section class="sec sec--line" id="process" data-section="Process" data-form="helix">
+    <div class="wrap">
+        <header class="sec-head">
+            <p class="kicker" data-reveal><i>01</i><span data-scramble>Process</span></p>
+            <h2 class="h2" data-split>How We <span class="goth" data-keep>Work</span></h2>
+        </header>
+        <ol class="steps" data-stagger>
+            <li class="step" data-reveal>
+                <p class="step__n">01</p>
+                <h3>Discovery</h3>
+                <p>We learn about your event, your audience, and your vision. No cookie-cutter solutions.</p>
+            </li>
+            <li class="step" data-reveal>
+                <p class="step__n">02</p>
+                <h3>Concept</h3>
+                <p>We develop visual concepts, mood boards, and test renders tailored to your brief.</p>
+            </li>
+            <li class="step" data-reveal>
+                <p class="step__n">03</p>
+                <h3>Production</h3>
+                <p>We build, animate, and refine. You get revision rounds and full transparency.</p>
+            </li>
+            <li class="step" data-reveal>
+                <p class="step__n">04</p>
+                <h3>Delivery</h3>
+                <p>Final assets delivered to spec, or we show up on-site and run the visuals live.</p>
+            </li>
+        </ol>
+    </div>
+</section>
+
+<section class="sec sec--line" id="inquiry" data-section="Inquiry" data-form="cloud">
+    <div class="wrap split-cols split-cols--form">
+        <aside>
+            <p class="kicker" data-reveal><i>02</i><span data-scramble>Inquiry</span></p>
+            <h2 class="h2" data-split style="margin-top:22px">Tell Us About Your <span class="goth" data-keep>Project</span></h2>
+            <p class="lede" data-reveal style="margin-top:24px">The more detail you share, the faster we can give you an accurate quote.</p>
+            <p class="cta__mail" data-reveal>Or email us directly at <a href="mailto:relicvisuals404@gmail.com">relicvisuals404@gmail.com</a></p>
+        </aside>
+        <div class="form-panel frame" data-reveal>
+            <form id="inquiry-form" class="contact-form" method="POST" action="https://api.web3forms.com/submit">
+                <input type="hidden" name="access_key" value="6738ef58-2a37-4635-815f-a15ac73e361f">
+                <input type="hidden" name="subject" value="New Project Inquiry - Relic Studios">
+                <input type="hidden" name="redirect" value="https://relicstudios.xyz/services.html#inquiry">
+                <input type="checkbox" name="botcheck" style="display: none;" tabindex="-1" autocomplete="off">
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="inq-name">Your Name *</label>
+                        <input type="text" id="inq-name" name="name" placeholder="Your name" autocomplete="name" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="inq-email">Email *</label>
+                        <input type="email" id="inq-email" name="email" placeholder="your@email.com" autocomplete="email" required>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="inq-company">Company / Organization</label>
+                        <input type="text" id="inq-company" name="company" placeholder="Your company or event name" autocomplete="organization">
+                    </div>
+                    <div class="form-group">
+                        <label for="inq-role">Your Role</label>
+                        <input type="text" id="inq-role" name="role" placeholder="Event promoter, brand manager, etc.">
+                    </div>
+                </div>
+
+                <div class="form-group form-group-full">
+                    <label for="inq-service">What do you need? *</label>
+                    <select id="inq-service" name="service" required>
+                        <option value="">Select a service</option>
+                        <option value="Live VJ Performance">Live VJ Performance</option>
+                        <option value="Pre-Rendered Content">Pre-Rendered Content</option>
+                        <option value="Interactive Installation">Interactive Installation</option>
+                        <option value="AI-Driven Visuals">AI-Driven Visuals</option>
+                        <option value="Brand &amp; Commercial">Brand &amp; Commercial</option>
+                        <option value="Technical Consulting">Technical Consulting</option>
+                        <option value="Multiple / Not Sure">Multiple / Not Sure Yet</option>
+                    </select>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="inq-date">Event / Project Date</label>
+                        <input type="text" id="inq-date" name="date" placeholder="e.g. June 2026, or ASAP">
+                    </div>
+                    <div class="form-group">
+                        <label for="inq-audience">Expected Audience Size</label>
+                        <input type="text" id="inq-audience" name="audience" placeholder="e.g. 500, 5,000, 20,000+">
+                    </div>
+                </div>
+
+                <div class="form-group form-group-full">
+                    <label for="inq-budget">Budget Range</label>
+                    <select id="inq-budget" name="budget">
+                        <option value="">Prefer not to say</option>
+                        <option value="Under $2,000">Under $2,000</option>
+                        <option value="$2,000 - $5,000">$2,000 - $5,000</option>
+                        <option value="$5,000 - $15,000">$5,000 - $15,000</option>
+                        <option value="$15,000 - $50,000">$15,000 - $50,000</option>
+                        <option value="$50,000+">$50,000+</option>
+                    </select>
+                    <div class="budget-hint">Sharing a budget range helps us tailor our proposal to your needs.</div>
+                </div>
+
+                <div class="form-group form-group-full">
+                    <label for="inq-details">Project Details *</label>
+                    <textarea id="inq-details" name="message" placeholder="Tell us about your event or project. What's the vibe? What kind of visuals are you imagining? Any technical requirements (LED wall specs, venue details)?" rows="6" required></textarea>
+                </div>
+
+                <div class="form-group form-group-full">
+                    <label for="inq-links">Reference Links</label>
+                    <input type="url" id="inq-links" name="referenceLinks" placeholder="Link to your event, venue, or visual references">
+                </div>
+
+                <button type="submit" class="submit-button">Send Inquiry</button>
+                <div id="inquiry-form-status" class="form-status"></div>
+            </form>
+        </div>
+    </div>
+</section>

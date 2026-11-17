@@ -1,0 +1,152 @@
+<!--meta
+{
+  "out": "about.html",
+  "id": "about",
+  "nav": "about",
+  "hud": "About",
+  "canonical": "/about.html",
+  "sitemapOrder": 4,
+  "achModal": true,
+  "form": "crescent",
+  "title": "About Relic Studios | Meet the Motion Graphics Team",
+  "description": "Meet the creative team behind Relic Studios. Founded by Aidan Poole, we specialize in motion graphics, AI-driven visuals, and real-time graphics for live events and festivals.",
+  "keywords": "Relic Studios team, Aidan Poole, motion graphics artists, VJ team, visual artists, TouchDesigner artists, creative directors",
+  "crumbs": [["About", "about.html"]]
+}
+-->
+<!--head
+<script type="application/ld+json">
+{
+    "@context": "https://schema.org",
+    "@graph": [
+        {
+            "@type": "AboutPage",
+            "@id": "{{site}}/about.html#webpage",
+            "url": "{{site}}/about.html",
+            "name": "About Relic Studios",
+            "isPartOf": { "@id": "{{site}}/#website" },
+            "mainEntity": { "@id": "{{site}}/#organization" }
+        },
+        {
+            "@type": "Organization",
+            "@id": "{{site}}/#organization",
+            "name": "Relic Studios",
+            "url": "{{site}}/",
+            "founder": { "@id": "{{site}}/#aidan-poole" },
+            "member": [
+                {
+                    "@type": "Person",
+                    "@id": "{{site}}/#aidan-poole",
+                    "name": "Aidan Poole",
+                    "url": "{{site}}/aidan-poole.html",
+                    "jobTitle": "Founder & Creative Director",
+                    "knowsAbout": ["TouchDesigner", "Notch", "Cinema 4D", "ComfyUI", "Live Performance"]
+                },
+                {
+                    "@type": "Person",
+                    "name": "Steven McCorry",
+                    "jobTitle": "Creative Director & Motion Designer",
+                    "knowsAbout": ["Cinema 4D", "TouchDesigner", "ComfyUI", "Notch", "Unreal Engine 5"]
+                },
+                {
+                    "@type": "Person",
+                    "name": "Rion Debellaistre",
+                    "jobTitle": "3D Artist & VJ",
+                    "knowsAbout": ["Blender", "Unreal Engine 5", "ZBrush", "Rigging & Animation"]
+                }
+            ]
+        },
+        {
+            "@type": "BreadcrumbList",
+            "itemListElement": [
+                { "@type": "ListItem", "position": 1, "name": "Home", "item": "{{site}}/" },
+                { "@type": "ListItem", "position": 2, "name": "About", "item": "{{site}}/about.html" }
+            ]
+        }
+    ]
+}
+</script>
+head-->
+
+<section class="page-hero" id="about" data-section="About" data-form="crescent">
+    <div class="wrap">
+        {{> crumbs}}
+        <p class="kicker rise" style="--i:0"><i>00</i><span>The studio</span></p>
+        <h1 class="h1" data-split>About Relic <span class="goth" data-keep>Studios</span></h1>
+    </div>
+</section>
+
+<section class="sec sec--tight" data-section="About" data-form="crescent">
+    <div class="wrap">
+        <p class="statement statement--wide" data-words>Founded by <a class="statement__link" href="{{root}}aidan-poole.html">Aidan Poole</a>, Relic Studios LLC specializes in motion graphics and AI-driven visuals for nightclubs, festivals, entertainment venues, and global brands. Blending creative direction with technical mastery, we deliver cutting-edge visual experiences designed for large-scale LED walls and live performances.</p>
+        <p class="sec-foot" data-reveal>
+            <a class="link-arrow" href="{{root}}aidan-poole.html">Aidan Poole: profile and credits {{> icon name=right}}</a>
+            <a class="link-arrow" href="{{root}}projects/">Work and credits {{> icon name=right}}</a>
+        </p>
+    </div>
+</section>
+
+<section class="sec sec--line" id="achievements" data-section="Achievements" data-form="galaxy">
+    <div class="wrap">
+        <header class="sec-head">
+            <p class="kicker" data-reveal><i>01</i><span data-scramble>Achievements</span></p>
+            <div class="sec-head__row">
+                <h2 class="h2" data-split>Key Achievements &amp; <span class="goth" data-keep>Projects</span></h2>
+                <p class="sec-head__note" data-reveal>Open a card to read the full write-up, or follow its link to the page that carries it.</p>
+            </div>
+        </header>
+        {{> achievements}}
+    </div>
+</section>
+
+<section class="sec sec--line" id="skills" data-section="Skills" data-form="wall">
+    <div class="wrap">
+        <header class="sec-head">
+            <p class="kicker" data-reveal><i>02</i><span data-scramble>Toolkit</span></p>
+            <h2 class="h2" data-split>Technical <span class="goth" data-keep>Skills</span></h2>
+        </header>
+        <div class="skills" data-stagger>
+            <div class="skills__row" data-reveal>
+                <h3>Real-Time Graphics &amp; Live Performance</h3>
+                <ul class="tags"><li>TouchDesigner</li><li>Notch</li><li>Unreal Engine</li><li>Resolume</li><li>VJ Performance</li></ul>
+            </div>
+            <div class="skills__row" data-reveal>
+                <h3>3D &amp; Animation</h3>
+                <ul class="tags"><li>Cinema 4D</li><li>Blender</li><li>Houdini</li><li>X-Particles</li><li>Octane Render</li></ul>
+            </div>
+            <div class="skills__row" data-reveal>
+                <h3>Compositing &amp; Post-Production</h3>
+                <ul class="tags"><li>After Effects</li><li>Premiere Pro</li><li>DaVinci Resolve</li><li>Nuke</li></ul>
+            </div>
+            <div class="skills__row" data-reveal>
+                <h3>AI &amp; Generative Workflows</h3>
+                <ul class="tags"><li>Stable Diffusion</li><li>ComfyUI</li><li>RunwayML</li><li>AI Video Generation</li><li>Custom Training</li></ul>
+            </div>
+            <div class="skills__row" data-reveal>
+                <h3>Technical Expertise</h3>
+                <ul class="tags"><li>LED Systems</li><li>Projection Mapping</li><li>DMX Control</li><li>MIDI Integration</li><li>Real-time Reactivity</li></ul>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="sec sec--line" id="team" data-section="Team" data-form="helix">
+    <div class="wrap">
+        <header class="sec-head">
+            <p class="kicker" data-reveal><i>03</i><span data-scramble>People</span></p>
+            <h2 class="h2" data-split>Meet The <span class="goth" data-keep>Team</span></h2>
+        </header>
+        {{> team}}
+    </div>
+</section>
+
+<section class="sec sec--line cta" id="contact" data-section="Contact" data-form="cloud">
+    <div class="wrap">
+        <p class="kicker" data-reveal><i>04</i><span data-scramble>Contact</span></p>
+        <h2 class="cta__title" data-split>Let's Create Something <span class="goth" data-keep>Epic</span></h2>
+        <div class="btns" data-reveal>
+            <a class="btn" href="{{root}}services.html"><span>View Services</span></a>
+            <a class="btn btn--solid" href="{{root}}services.html#inquiry"><span>Start a Project</span>{{> icon name=right}}</a>
+        </div>
+    </div>
+</section>

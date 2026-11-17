@@ -94,6 +94,16 @@ class GPGPUStarfield {
         this.velocityVariable.material.uniforms.uMouse = { value: new THREE.Vector3() };
         this.velocityVariable.material.uniforms.uMouseSpeed = { value: 0.0 };
 
+        // Formations: each star has a target position in texture A and B; uMix blends them.
+        // The alpha channel says how free the star is (1 = drifts as before, 0 = holds its place).
+        this.formations = this.buildFormations();
+        this.formA = 'cloud';
+        this.formB = 'cloud';
+        this.mix = 1;
+        this.velocityVariable.material.uniforms.uTargetA = { value: this.formations.cloud };
+        this.velocityVariable.material.uniforms.uTargetB = { value: this.formations.cloud };
+        this.velocityVariable.material.uniforms.uMix = { value: 1.0 };
+
         // Initialize
         const error = this.gpuCompute.init();
         if (error !== null) {
@@ -103,12 +113,12 @@ class GPGPUStarfield {
         // Create particles
         this.createParticles();
 
-        console.log('GPGPU Starfield initialized:', this.particleCount, 'particles');
     }
 
     fillTextures(positionTexture, velocityTexture) {
         const posArray = positionTexture.image.data;
         const velArray = velocityTexture.image.data;
+        this.homePositions = new Float32Array(posArray.length);
 
         for (let i = 0; i < posArray.length; i += 4) {
             // Initialize particles in condensed center volume
@@ -120,6 +130,11 @@ class GPGPUStarfield {
             posArray[i + 1] = radius * Math.sin(phi) * Math.sin(theta);
             posArray[i + 2] = radius * Math.cos(phi);
             posArray[i + 3] = radius; // Store original radius
+
+            this.homePositions[i + 0] = posArray[i + 0];
+            this.homePositions[i + 1] = posArray[i + 1];
+            this.homePositions[i + 2] = posArray[i + 2];
+            this.homePositions[i + 3] = 1.0; // free
 
             // Start with ZERO velocity - let curl noise drive everything
             velArray[i + 0] = 0.0;
@@ -134,6 +149,9 @@ class GPGPUStarfield {
             uniform float uTime;
             uniform vec3 uMouse;
             uniform float uMouseSpeed;
+            uniform sampler2D uTargetA;
+            uniform sampler2D uTargetB;
+            uniform float uMix;
 
             // 3D Simplex noise function
             vec3 mod289(vec3 x) { return x - floor(x * (1.0 / 289.0)) * 289.0; }
@@ -247,12 +265,19 @@ class GPGPUStarfield {
                 vec4 tmpVel = texture2D(textureVelocity, uv);
                 vec3 vel = tmpVel.xyz;
 
+                // Where this star belongs in the current formation, and how free it is
+                vec4 targetA = texture2D(uTargetA, uv);
+                vec4 targetB = texture2D(uTargetB, uv);
+                vec3 target = mix(targetA.xyz, targetB.xyz, uMix);
+                float freeAmt = mix(targetA.w, targetB.w, uMix); // 1 = drifting cloud, 0 = held in a shape
+                float held = 1.0 - freeAmt;
+
                 // Medium damping for fluid motion
                 vel *= 0.94;
 
-                // Curl noise - increased for visible swirling
+                // Curl noise - increased for visible swirling (calmer while holding a shape)
                 vec3 curl = computeCurl(pos, uTime);
-                vel += curl * 0.05; // Increased from 0.015 for more swirl
+                vel += curl * 0.05 * mix(0.22, 1.0, freeAmt);
 
                 // Add rotational vortex force around center for cohesive swirling
                 float distFromCenter = length(pos);
@@ -261,15 +286,18 @@ class GPGPUStarfield {
 
                 // Stronger vortex near center, weaker at edges
                 float vortexStrength = smoothstep(350.0, 50.0, distFromCenter) * 0.02;
-                vel += tangent * vortexStrength;
+                vel += tangent * vortexStrength * freeAmt;
 
                 // Very weak attraction back to original position
                 vec3 originalPos = normalize(pos) * originalRadius;
                 vec3 toOrigin = originalPos - pos;
-                vel += toOrigin * 0.0001;
+                vel += toOrigin * 0.0001 * freeAmt;
 
                 // Gentle attraction toward center for cohesion
-                vel += toCenter * 0.003 * smoothstep(350.0, 100.0, distFromCenter);
+                vel += toCenter * 0.003 * smoothstep(350.0, 100.0, distFromCenter) * freeAmt;
+
+                // Spring toward the formation target
+                vel += (target - pos) * 0.0075 * held;
 
                 // Mouse interaction - gentle
                 vec3 toMouse = pos - uMouse;
@@ -304,6 +332,120 @@ class GPGPUStarfield {
                 gl_FragColor = vec4(pos, tmpPos.w);
             }
         `;
+    }
+
+
+    // ---- Formations -------------------------------------------------------
+    // Each builder fills a Float32Array of (x, y, z, free) per star.
+    // About a third of the stars stay free in every shape so the field keeps its depth.
+    buildFormations() {
+        const size = this.textureSize;
+        const count = size * size;
+        const home = this.homePositions;
+        const rand = (() => { let s = 1337; return () => { s = (s * 16807) % 2147483647; return (s - 1) / 2147483646; }; })();
+        const gauss = () => { let u = 0; for (let i = 0; i < 4; i++) u += rand(); return (u - 2) / 2; };
+
+        const make = (fn, freeShare) => {
+            const data = new Float32Array(count * 4);
+            for (let i = 0; i < count; i++) {
+                const o = i * 4;
+                if (rand() < freeShare) {
+                    data[o] = home[o]; data[o + 1] = home[o + 1]; data[o + 2] = home[o + 2]; data[o + 3] = 1;
+                } else {
+                    const p = fn();
+                    data[o] = p[0]; data[o + 1] = p[1]; data[o + 2] = p[2]; data[o + 3] = 0;
+                }
+            }
+            const tex = new THREE.DataTexture(data, size, size, THREE.RGBAFormat, THREE.FloatType);
+            tex.minFilter = THREE.NearestFilter;
+            tex.magFilter = THREE.NearestFilter;
+            tex.needsUpdate = true;
+            return tex;
+        };
+
+        const cloud = make(() => [0, 0, 0], 1);
+
+        // Accretion ring: a thin bright band with a fainter outer disc.
+        const ring = make(() => {
+            const a = rand() * Math.PI * 2;
+            const outer = rand() < 0.28;
+            const r = outer ? 270 + rand() * 120 : 218 + gauss() * 16;
+            const y = gauss() * (outer ? 5 : 9);
+            return [Math.cos(a) * r, y, Math.sin(a) * r];
+        }, 0.3);
+
+        // Spiral galaxy: four arms and a core.
+        const galaxy = make(() => {
+            if (rand() < 0.16) {
+                const r = Math.abs(gauss()) * 46;
+                const a = rand() * Math.PI * 2;
+                return [Math.cos(a) * r, gauss() * 14, Math.sin(a) * r];
+            }
+            const arm = Math.floor(rand() * 4);
+            const t = Math.pow(rand(), 0.75);
+            const r = 30 + t * 330;
+            const a = arm * (Math.PI / 2) + t * 4.6 + gauss() * (0.42 - t * 0.2);
+            return [Math.cos(a) * r, gauss() * (12 - t * 8), Math.sin(a) * r];
+        }, 0.26);
+
+        // LED stage: a curved wall of evenly spaced points with a floor grid running toward the viewer.
+        const cols = 120, rows = 44, wallRadius = 420, wallZ = 130, floorY = -130;
+        const wall = make(() => {
+            if (rand() < 0.3) {
+                for (let n = 0; n < 30; n++) {
+                    const x = (Math.floor(rand() * 61) - 30) * 14;
+                    const z = -290 + Math.floor(rand() * 44) * 14;
+                    const dz = z - wallZ;
+                    if (z > wallZ || x * x + dz * dz < wallRadius * wallRadius) return [x, floorY, z];
+                }
+                return [0, floorY, 0];
+            }
+            const c = Math.floor(rand() * cols), rw = Math.floor(rand() * rows);
+            const arc = (c / (cols - 1) - 0.5) * 2.0; // about 115 degrees
+            return [Math.sin(arc) * wallRadius, floorY + rw * (260 / (rows - 1)), -Math.cos(arc) * wallRadius + wallZ];
+        }, 0.12);
+
+        // Crescent: the moon from the Relic mark.
+        const crescent = make(() => {
+            for (let n = 0; n < 40; n++) {
+                const a = rand() * Math.PI * 2;
+                const r = Math.sqrt(rand()) * 210;
+                const x = Math.cos(a) * r, y = Math.sin(a) * r;
+                const dx = x - 78, dy = y - 34;
+                if (dx * dx + dy * dy > 176 * 176) return [x, y, gauss() * (r > 198 ? 3 : 10)];
+            }
+            return [-200, 0, 0];
+        }, 0.3);
+
+        // Double helix column.
+        const helix = make(() => {
+            const t = rand();
+            if (rand() < 0.22) {
+                // rungs
+                const k = Math.round(t * 34) / 34;
+                const u = (rand() - 0.5) * 2;
+                return [Math.cos(k * Math.PI * 7) * 92 * u, (k - 0.5) * 640, Math.sin(k * Math.PI * 7) * 92 * u];
+            }
+            const a = t * Math.PI * 7 + (rand() < 0.5 ? 0 : Math.PI);
+            return [Math.cos(a) * 92 + gauss() * 5, (t - 0.5) * 640 + gauss() * 4, Math.sin(a) * 92 + gauss() * 5];
+        }, 0.3);
+
+        return { cloud, ring, galaxy, wall, crescent, helix };
+    }
+
+    // Move the stars toward a named formation. Unknown names fall back to the cloud.
+    setFormation(name) {
+        if (!this.formations) return;
+        if (!this.formations[name]) name = 'cloud';
+        if (name === this.formB) return;
+        // Start from whichever shape the stars are closer to right now.
+        this.formA = this.mix > 0.5 ? this.formB : this.formA;
+        this.formB = name;
+        this.mix = 0;
+        const u = this.velocityVariable.material.uniforms;
+        u.uTargetA.value = this.formations[this.formA];
+        u.uTargetB.value = this.formations[this.formB];
+        u.uMix.value = 0;
     }
 
     createParticles() {
@@ -423,6 +565,7 @@ class GPGPUStarfield {
     }
 
     update(time) {
+        if (!this.gpuCompute || !this.particles) return;
         // Update GPGPU uniforms
         this.velocityVariable.material.uniforms.uTime.value = time;
         this.velocityVariable.material.uniforms.uMouse.value = this.mouse;
@@ -430,6 +573,13 @@ class GPGPUStarfield {
 
         // Decay mouse speed
         this.mouseSpeed *= 0.95;
+
+        // Ease the blend between formations
+        if (this.mix < 1) {
+            this.mix = Math.min(1, this.mix + 0.012);
+            const m = this.mix;
+            this.velocityVariable.material.uniforms.uMix.value = m * m * (3 - 2 * m);
+        }
 
         // Compute GPGPU (this updates position and velocity textures)
         this.gpuCompute.compute();

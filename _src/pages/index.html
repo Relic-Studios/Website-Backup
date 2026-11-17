@@ -1,0 +1,158 @@
+<!--meta
+{
+  "out": "index.html",
+  "id": "home",
+  "nav": "home",
+  "hud": "Intro",
+  "canonical": "/",
+  "sitemapOrder": 0,
+  "lightbox": true,
+  "form": "cloud",
+  "title": "Relic Studios | Motion Graphics & AI-Driven Visuals for Live Events",
+  "description": "Relic Studios creates cutting-edge motion graphics and AI-driven visuals for nightclubs, festivals, and live events. Specializing in real-time visuals, LED wall content, and VJ performances.",
+  "keywords": "motion graphics, VJ visuals, live event visuals, LED wall content, AI visuals, TouchDesigner, Notch, festival visuals, nightclub visuals, real-time graphics, Relic Studios, Aidan Poole"
+}
+-->
+<!--head
+<script type="application/ld+json">
+{
+    "@context": "https://schema.org",
+    "@graph": [
+        {
+            "@type": "Organization",
+            "@id": "{{site}}/#organization",
+            "name": "Relic Studios",
+            "legalName": "Relic Studios LLC",
+            "url": "{{site}}/",
+            "logo": "{{site}}/assets/images/relic.png",
+            "description": "Relic Studios creates cutting-edge motion graphics and AI-driven visuals for nightclubs, festivals, and live events.",
+            "foundingDate": "2024",
+            "founder": {
+                "@type": "Person",
+                "@id": "{{site}}/#aidan-poole",
+                "name": "Aidan Poole",
+                "url": "{{site}}/aidan-poole.html"
+            },
+            "contactPoint": {
+                "@type": "ContactPoint",
+                "contactType": "customer service",
+                "email": "relicvisuals404@gmail.com"
+            },
+            "sameAs": [
+                "https://discord.gg/p7URyFKnBp",
+                "https://github.com/Relic-Studios",
+                "https://www.instagram.com/relic.visuals/"
+            ],
+            "knowsAbout": ["Motion Graphics", "VJ Visuals", "Live Event Production", "LED Wall Content", "AI-Driven Visuals", "TouchDesigner", "Notch", "Real-time Graphics"],
+            "areaServed": "Worldwide",
+            "serviceType": ["Motion Graphics Production", "Live Event Visuals", "VJ Performance", "LED Wall Content Creation", "AI Visual Development"]
+        },
+        {
+            "@type": "WebSite",
+            "@id": "{{site}}/#website",
+            "name": "Relic Studios",
+            "url": "{{site}}/",
+            "publisher": { "@id": "{{site}}/#organization" }
+        }
+    ]
+}
+</script>
+head-->
+
+<section class="hero" id="home" data-section="Intro" data-form="cloud">
+    <div class="hero__inner">
+        <img class="hero__logo" src="{{root}}assets/images/relic.png" alt="Relic Studios logo" width="1920" height="1080" fetchpriority="high">
+        <h1 class="hero__title">
+            <span class="hero__eyebrow rise" style="--i:0">Relic Studios — motion graphics and AI-driven visuals for live events</span>
+            <span class="display" data-split style="--d:.6s">Exploring the intersection of <span class="goth" data-keep>art</span> and <span class="tech" data-keep>technology</span></span>
+        </h1>
+        <p class="lede rise" style="--i:5">Relic Studios creates motion graphics and AI-driven visuals for nightclubs, festivals and live events: real-time visuals, LED wall content and VJ performances.</p>
+        <div class="btns rise" style="--i:6">
+            <a class="btn btn--solid" href="#work"><span>View work</span>{{> icon name=right}}</a>
+            <a class="btn" href="{{root}}services.html#inquiry"><span>Start a project</span></a>
+        </div>
+    </div>
+    <a class="hero__cue rise" style="--i:8" href="#work" aria-label="Scroll to selected work"><span>Scroll</span><i></i></a>
+</section>
+
+{{> ticker}}
+
+<section class="sec" id="work" data-section="Work" data-form="galaxy">
+    <div class="wrap">
+        <header class="sec-head">
+            <p class="kicker" data-reveal><i>01</i><span data-scramble>Selected work</span></p>
+            <div class="sec-head__row">
+                <h2 class="h2" data-split>Selected <span class="goth" data-keep>work</span></h2>
+                <p class="sec-head__note" data-reveal>Credits, productions and software by Aidan Poole (Relic) and Relic Studios.</p>
+            </div>
+        </header>
+        {{> worklist}}
+        <p class="sec-foot" data-reveal><a class="link-arrow" href="{{root}}projects/">All work and credits {{> icon name=right}}</a></p>
+    </div>
+</section>
+
+<section class="sec sec--line" id="gallery" data-section="Gallery" data-form="wall">
+    <div class="wrap">
+        <header class="sec-head">
+            <p class="kicker" data-reveal><i>02</i><span data-scramble>Gallery</span></p>
+            <div class="sec-head__row">
+                <h2 class="h2" data-split>Stills, renders and live <span class="goth" data-keep>sets</span></h2>
+            </div>
+        </header>
+        {{> gallery}}
+        <div class="g-cta" data-reveal>
+            <p>Like what you see? Let's make something for your next event.</p>
+            <a class="btn btn--solid" href="{{root}}services.html#inquiry"><span>Get a Quote</span>{{> icon name=right}}</a>
+        </div>
+    </div>
+</section>
+
+<section class="sec sec--line" id="services" data-section="Services" data-form="ring">
+    <div class="wrap">
+        <header class="sec-head">
+            <p class="kicker" data-reveal><i>03</i><span data-scramble>What we do</span></p>
+            <div class="sec-head__row">
+                <h2 class="h2" data-split>What we <span class="goth" data-keep>do</span></h2>
+                <p class="sec-head__note" data-reveal>We create immersive visual experiences for live events, festivals, and brands. From concept to execution, on-site or remote.</p>
+            </div>
+        </header>
+        {{> services_teaser}}
+        <p class="sec-foot" data-reveal><a class="link-arrow" href="{{root}}services.html">All services {{> icon name=right}}</a></p>
+    </div>
+</section>
+
+<section class="sec sec--line" id="studio" data-section="Studio" data-form="crescent">
+    <div class="wrap">
+        <header class="sec-head">
+            <p class="kicker" data-reveal><i>04</i><span data-scramble>The studio</span></p>
+        </header>
+        <div class="studio">
+            <p class="statement" data-words>Founded by Aidan Poole, Relic Studios LLC specializes in motion graphics and AI-driven visuals for nightclubs, festivals, entertainment venues, and global brands. Blending creative direction with technical mastery, we deliver cutting-edge visual experiences designed for large-scale LED walls and live performances.</p>
+            <div class="founder" data-reveal>
+                <a class="founder__photo frame" href="{{root}}aidan-poole.html" aria-label="Aidan Poole: profile and credits">
+                    <img src="{{root}}assets/HeadShots/web/aidanpooleheadshot.webp" width="768" height="1360" alt="Aidan Poole" loading="lazy" decoding="async">
+                </a>
+                <p class="kicker kicker--plain"><i>Founder</i></p>
+                <h3 class="founder__name">Aidan Poole (Relic)</h3>
+                <p>Aidan Poole (Relic) is a Bay Area visual artist, creative technologist and founder of Relic Studios. His work spans 3D animation, live visuals, generative video and AI software.</p>
+                <p class="founder__links">
+                    <a class="link-arrow" href="{{root}}aidan-poole.html">Aidan Poole: profile and credits {{> icon name=right}}</a>
+                    <a class="link-arrow" href="{{root}}about.html">About the studio {{> icon name=right}}</a>
+                </p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="sec sec--line cta" id="contact" data-section="Contact" data-form="cloud">
+    <div class="wrap">
+        <p class="kicker" data-reveal><i>05</i><span data-scramble>Contact</span></p>
+        <h2 class="cta__title" data-split>Let's Create Something <span class="goth" data-keep>Epic</span></h2>
+        <p class="lede" data-reveal>Ready to elevate your event with cutting-edge visuals? Tell us about your project and we'll put together a custom proposal.</p>
+        <div class="btns" data-reveal>
+            <a class="btn" href="{{root}}services.html"><span>View Services</span></a>
+            <a class="btn btn--solid" href="{{root}}services.html#inquiry"><span>Start a Project</span>{{> icon name=right}}</a>
+        </div>
+        <p class="cta__mail" data-reveal>Or email us directly at <a href="mailto:relicvisuals404@gmail.com">relicvisuals404@gmail.com</a></p>
+    </div>
+</section>

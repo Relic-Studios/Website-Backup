@@ -12,6 +12,7 @@ Disallow: /node_modules/
 Disallow: /dist/
 Disallow: /public/
 Disallow: /tools/
+Disallow: /_src/
 
 # Allow search engines to crawl all public content
 Allow: /assets/

@@ -1,0 +1,147 @@
+{
+  "assets/images/eldritch0352.jpg": {
+    "src": "assets/images/gallery/eldritch0352.webp",
+    "width": 960,
+    "height": 540
+  },
+  "assets/images/hallway_Main0006_00000.jpg": {
+    "src": "assets/images/gallery/hallway-main0006-00000.webp",
+    "width": 720,
+    "height": 1280
+  },
+  "assets/images/thelostgirl2_00000.jpg": {
+    "src": "assets/images/gallery/thelostgirl2-00000.webp",
+    "width": 960,
+    "height": 1200
+  },
+  "assets/images/newidk.jpg": {
+    "src": "assets/images/gallery/newidk.webp",
+    "width": 640,
+    "height": 1280
+  },
+  "assets/images/pretty.jpg": {
+    "src": "assets/images/gallery/pretty.webp",
+    "width": 960,
+    "height": 540
+  },
+  "assets/images/thelostgirl4 (00000).jpg": {
+    "src": "assets/images/gallery/thelostgirl4-00000.webp",
+    "width": 720,
+    "height": 1280
+  },
+  "assets/images/woman_00000.jpg": {
+    "src": "assets/images/gallery/woman-00000.webp",
+    "width": 720,
+    "height": 1280
+  },
+  "assets/images/newidk2.jpg": {
+    "src": "assets/images/gallery/newidk2.webp",
+    "width": 640,
+    "height": 1280
+  },
+  "assets/images/PXL_20250727_062609308.NIGHT.RAW-01.COVER.jpg": {
+    "src": "assets/images/gallery/pxl-20250727-062609308-night-raw-01-cover-wide.webp",
+    "width": 1400,
+    "height": 788
+  },
+  "assets/videos/Comp 1_2.mp4": {
+    "src": "assets/images/gallery/comp-1-2.webp",
+    "width": 720,
+    "height": 1280
+  },
+  "assets/videos/Main6.mp4": {
+    "src": "assets/images/gallery/main6.webp",
+    "width": 720,
+    "height": 1280
+  },
+  "assets/videos/newwatcher_tvai_optimized.mp4": {
+    "src": "assets/images/gallery/newwatcher-tvai-optimized.webp",
+    "width": 720,
+    "height": 1280
+  },
+  "assets/videos/orb.mp4": {
+    "src": "assets/images/gallery/orb.webp",
+    "width": 960,
+    "height": 540
+  },
+  "assets/videos/20250418_201655.mp4": {
+    "src": "assets/images/gallery/20250418-201655.webp",
+    "width": 960,
+    "height": 444
+  },
+  "assets/videos/20250418_220743.mp4": {
+    "src": "assets/images/gallery/20250418-220743.webp",
+    "width": 960,
+    "height": 444
+  },
+  "assets/videos/20250418_223044.mp4": {
+    "src": "assets/images/gallery/20250418-223044.webp",
+    "width": 960,
+    "height": 444
+  },
+  "assets/videos/20250418_225001.mp4": {
+    "src": "assets/images/gallery/20250418-225001.webp",
+    "width": 960,
+    "height": 444
+  },
+  "assets/videos/20250418_235734.mp4": {
+    "src": "assets/images/gallery/20250418-235734.webp",
+    "width": 960,
+    "height": 444
+  },
+  "assets/videos/Snapchat-1817447126.mp4": {
+    "src": "assets/images/gallery/snapchat-1817447126.webp",
+    "width": 848,
+    "height": 480
+  },
+  "assets/videos/Snapchat-721211222.mp4": {
+    "src": "assets/images/gallery/snapchat-721211222.webp",
+    "width": 719,
+    "height": 1280
+  },
+  "assets/videos/PXL_20250727_062750151.mp4": {
+    "src": "assets/images/gallery/pxl-20250727-062750151.webp",
+    "width": 720,
+    "height": 1280
+  },
+  "assets/images/touchdesignerimg.png": {
+    "src": "assets/images/gallery/touchdesignerimg-wide.webp",
+    "width": 1400,
+    "height": 744
+  },
+  "assets/images/video-thumbnails/PXL_20250727_062750151.jpg": {
+    "src": "assets/images/gallery/pxl-20250727-062750151-poster.webp",
+    "width": 788,
+    "height": 1400
+  },
+  "assets/images/video-thumbnails/newwatcher_tvai_optimized.jpg": {
+    "src": "assets/images/gallery/newwatcher-tvai-optimized-poster.webp",
+    "width": 788,
+    "height": 1400
+  },
+  "assets/HeadShots/aidanpooleheadshot.jpg": {
+    "src": "assets/HeadShots/web/aidanpooleheadshot.webp",
+    "width": 768,
+    "height": 1360
+  },
+  "assets/HeadShots/mikuaidan.webp": {
+    "src": "assets/HeadShots/web/mikuaidan.webp",
+    "width": 768,
+    "height": 1360
+  },
+  "assets/HeadShots/glasscraneheadshot.png": {
+    "src": "assets/HeadShots/web/glasscraneheadshot.webp",
+    "width": 800,
+    "height": 999
+  },
+  "assets/HeadShots/rxheadshot.png": {
+    "src": "assets/HeadShots/web/rxheadshot.webp",
+    "width": 800,
+    "height": 1200
+  },
+  "portrait-jpg": {
+    "src": "assets/HeadShots/web/aidan-poole.jpg",
+    "width": 768,
+    "height": 1360
+  }
+}
