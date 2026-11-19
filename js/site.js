@@ -1,7 +1,8 @@
 /* Relic Studios — interface behavior for every page.
    No dependencies. Each feature checks for its own markup and does nothing if it is absent.
-   The 3D background lives in main.js; this file talks to it only through the
-   `relic:form` event (which star formation to show). */
+   The 3D background lives in main.js; this file talks to it only through events:
+   `relic:form` (which star formation or picture to show), `relic:art` (pictures to fetch
+   ahead of time) and `relic:scroll` (how far the page and the current section have scrolled). */
 (function () {
     'use strict';
 
@@ -120,18 +121,21 @@
             root.style.setProperty('--p', p.toFixed(4));
             if (nav) nav.classList.toggle('is-scrolled', y > 24);
             if (pctEl) pctEl.textContent = String(Math.round(p * 100)).padStart(3, '0');
-            if (isHome) {
-                // The starfield is the hero; it steps back once reading starts.
-                const d = 0.10 + 0.34 * clamp(y / (window.innerHeight * 0.85), 0, 1);
-                root.style.setProperty('--dim', d.toFixed(3));
-            } else {
-                // Inner pages: the formation shows through the page title, then steps back.
-                const d = 0.26 + 0.2 * clamp(y / (window.innerHeight * 0.6), 0, 1);
-                root.style.setProperty('--dim', d.toFixed(3));
-            }
-            updateLitText();
             updateSection();
-            doc.dispatchEvent(new CustomEvent('relic:scroll', { detail: { progress: p, y } }));
+            let d;
+            if (artOn === 'frame') d = 0.02;          // a picture is on stage: nothing dims it
+            else if (artOn === 'backdrop') d = 0.42;  // a picture fills the window behind text: keep the text readable
+            else if (isHome) d = 0.10 + 0.34 * clamp(y / (window.innerHeight * 0.85), 0, 1); // the starfield is the hero; it steps back once reading starts
+            else d = 0.26 + 0.2 * clamp(y / (window.innerHeight * 0.6), 0, 1);               // inner pages: the formation shows through the page title, then steps back
+            root.style.setProperty('--dim', d.toFixed(3));
+            updateLitText();
+            // How far the middle of the window has travelled through the current section (0 to 1).
+            let section = 0.5;
+            if (currentSection) {
+                const r = currentSection.getBoundingClientRect();
+                section = clamp((window.innerHeight * 0.5 - r.top) / Math.max(1, r.height), 0, 1);
+            }
+            doc.dispatchEvent(new CustomEvent('relic:scroll', { detail: { progress: p, y, section } }));
         });
     }
 
@@ -157,12 +161,45 @@
         window.addEventListener('resize', () => { if (window.innerWidth > 900 && doc.body.classList.contains('menu-open')) set(false); });
     }
 
-    /* Which section holds the middle of the viewport: sets the HUD label and the star formation. */
+    /* Which section holds the middle of the viewport: sets the HUD label and what the 3D
+       background shows. A section names a star formation (data-form), or a picture that the
+       background turns into a 3D scene (data-form="art" with data-art; see js/artscene.js). */
     let sectionEls = [];
     let currentSection;
+    let artOn = ''; // '', 'frame' or 'backdrop': how the 3D background is showing a picture right now
+    const upright = () => window.innerWidth < window.innerHeight;
+    const artOf = (el) => {
+        const d = el.dataset;
+        if (!d.art) return null;
+        const mode = d.artMode === 'backdrop' ? 'backdrop' : 'frame';
+        // A section can name a second, upright picture for upright windows (phones).
+        if (d.artTall && upright()) return { src: d.artTall, full: d.artTallFull || '', depth: d.depthTall || '', mode };
+        return { src: d.art, full: d.artFull || '', depth: d.depth || '', mode };
+    };
     function initSections() {
         sectionEls = $$('[data-section], [data-form]').filter((el) => el !== doc.body);
         updateSection();
+
+        // Fetch each picture shortly before its section arrives.
+        const artEls = sectionEls.filter((el) => el.dataset.art);
+        if (artEls.length && 'IntersectionObserver' in window && root.classList.contains('has-art')) {
+            const io = new IntersectionObserver((entries) => {
+                entries.forEach((entry) => {
+                    if (!entry.isIntersecting) return;
+                    io.unobserve(entry.target);
+                    doc.dispatchEvent(new CustomEvent('relic:art', { detail: { preload: [artOf(entry.target)] } }));
+                });
+            }, { rootMargin: '140% 0px 140% 0px' });
+            artEls.forEach((el) => io.observe(el));
+        }
+
+        // Turning a phone changes which picture a section shows.
+        let wasUpright = upright();
+        window.addEventListener('resize', () => {
+            if (upright() === wasUpright) return;
+            wasUpright = upright();
+            if (currentSection && currentSection.dataset.artTall) { currentSection = null; updateSection(); }
+        });
     }
     function updateSection() {
         if (!sectionEls.length) return;
@@ -177,7 +214,38 @@
         const label = $('[data-hud-section]');
         if (label && best.dataset.section) label.textContent = best.dataset.section;
         const form = best.dataset.form || doc.body.dataset.form || 'cloud';
-        doc.dispatchEvent(new CustomEvent('relic:form', { detail: { form } }));
+        const art = form === 'art' ? artOf(best) : null;
+        artOn = art && root.classList.contains('has-art') ? art.mode : '';
+        root.classList.toggle('art-on', artOn === 'frame');
+
+        // A step of a showcase brings up its own caption (and its plain image where there is no 3D).
+        if (best.dataset.show !== undefined) {
+            const box = best.closest('.showcase');
+            const n = Number(best.dataset.show);
+            $$('.show', box).forEach((el, i) => el.classList.toggle('is-active', i === n));
+            $$('.showcase__rail li', box).forEach((el, i) => el.classList.toggle('is-active', i === n));
+        }
+        doc.dispatchEvent(new CustomEvent('relic:form', { detail: { form, art } }));
+    }
+
+    /* Lists lean with the scroll: a small skew that follows how fast the page is moving. */
+    function initScrollLean() {
+        const els = $$('[data-sv]');
+        if (reduced || !finePointer || !els.length) return;
+        let last = window.scrollY, v = 0, shown = 0;
+        const loop = () => {
+            const y = window.scrollY;
+            const target = clamp(((y - last) / Math.max(1, window.innerHeight)) * 7, -1, 1);
+            last = y;
+            v += (target - v) * 0.14;
+            const out = Math.abs(v) < 0.004 ? 0 : Math.round(v * 250) / 250;
+            if (out !== shown) {
+                shown = out;
+                els.forEach((el) => { el.style.transform = out ? `skewY(${(out * 1.8).toFixed(3)}deg)` : ''; });
+            }
+            requestAnimationFrame(loop);
+        };
+        requestAnimationFrame(loop);
     }
 
     function initTimecode() {
@@ -483,6 +551,7 @@
         initReveal();
         initMenu();
         initSections();
+        initScrollLean();
         initTimecode();
         initPointer();
         initGallery();

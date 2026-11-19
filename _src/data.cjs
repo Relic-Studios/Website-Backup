@@ -56,6 +56,20 @@ const gallery = [
     { type: 'live', src: 'assets/videos/PXL_20250727_062750151.mp4', poster: 'assets/images/video-thumbnails/PXL_20250727_062750151.jpg', title: 'Stage Projection', caption: 'Live event production | 2025' }
 ];
 
+// Showcase (home page, top of the gallery): the pictures the 3D background turns into scenes,
+// one per scroll step, in this order. Each must also be in `gallery` above (title and caption
+// come from there). A depth map gives a picture real relief: after adding one here, run
+//   python tools/make-depth.py assets/images/<file>
+// (see that file's header). Without a depth map the picture still shows, only flatter.
+const showcase = [
+    'assets/images/newidk.jpg',
+    'assets/images/eldritch0352.jpg',
+    'assets/images/thelostgirl2_00000.jpg',
+    'assets/images/hallway_Main0006_00000.jpg',
+    'assets/images/woman_00000.jpg',
+    'assets/images/newidk2.jpg'
+];
+
 // Team (About page). Text is the studio's own, unchanged.
 const team = [
     {
@@ -219,4 +233,4 @@ const services = [
 
 const practice = ['3D animation', '3D sculpting', 'Live visuals and VJ performance', 'LED and large-format display content', 'Generative video', 'Diffusion model fine-tuning', 'StreamDiffusion', 'Notch', 'TouchDesigner', 'ComfyUI', 'AI software development'];
 
-module.exports = { LINKS, work, gallery, team, achievements, services, practice };
+module.exports = { LINKS, work, gallery, showcase, team, achievements, services, practice };

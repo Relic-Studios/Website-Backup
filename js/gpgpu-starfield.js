@@ -1,5 +1,10 @@
 // GPGPU Starfield - Using Three.js GPUComputationRenderer
 // Inspired by Codrops dreamy particle effect
+//
+// The stars drift as a cloud, gather into named shapes (setFormation), and can gather into a
+// picture: setArt() takes one target position and one colour per star, so the cloud becomes a
+// coloured point image of an artwork (js/artscene.js builds that data). The pointer pushes stars
+// away along the line of sight (setPointerRay).
 
 class GPGPUStarfield {
     constructor(scene, camera, renderer) {
@@ -11,10 +16,18 @@ class GPGPUStarfield {
         this.particleCount = 20000; // Increased for denser center
         this.textureSize = Math.ceil(Math.sqrt(this.particleCount));
 
-        // Mouse tracking
-        this.mouse = new THREE.Vector3(0, 0, 0);
+        // Pointer: a ray from the camera through the cursor, and how fast the cursor is moving
+        this.rayOrigin = new THREE.Vector3(0, 0, 1000);
+        this.rayDir = new THREE.Vector3(0, 0, -1);
+        this.pointerOn = 0;
         this.mouseSpeed = 0;
         this.lastMousePos = new THREE.Vector2(0, 0);
+
+        // How hard a held star is pulled to its place, and how much speed it keeps each frame.
+        // Pictures use a stiffer, more damped pull than the loose shapes so they form quickly.
+        this.stiff = 0.0075;
+        this.damp = 0.94;
+        this.mixSpeed = 0.012;
 
         this.time = 0;
 
@@ -91,8 +104,12 @@ class GPGPUStarfield {
 
         // Add uniforms
         this.velocityVariable.material.uniforms.uTime = { value: 0.0 };
-        this.velocityVariable.material.uniforms.uMouse = { value: new THREE.Vector3() };
+        this.velocityVariable.material.uniforms.uRayO = { value: this.rayOrigin };
+        this.velocityVariable.material.uniforms.uRayD = { value: this.rayDir };
+        this.velocityVariable.material.uniforms.uPointerOn = { value: 0.0 };
         this.velocityVariable.material.uniforms.uMouseSpeed = { value: 0.0 };
+        this.velocityVariable.material.uniforms.uStiff = { value: this.stiff };
+        this.velocityVariable.material.uniforms.uDamp = { value: this.damp };
 
         // Formations: each star has a target position in texture A and B; uMix blends them.
         // The alpha channel says how free the star is (1 = drifts as before, 0 = holds its place).
@@ -100,6 +117,11 @@ class GPGPUStarfield {
         this.formA = 'cloud';
         this.formB = 'cloud';
         this.mix = 1;
+        // Star colours per formation (white unless the formation is a picture).
+        const white = new THREE.DataTexture(new Uint8Array([255, 255, 255, 0]), 1, 1, THREE.RGBAFormat);
+        white.needsUpdate = true;
+        this.white = white;
+        this.colors = {};
         this.velocityVariable.material.uniforms.uTargetA = { value: this.formations.cloud };
         this.velocityVariable.material.uniforms.uTargetB = { value: this.formations.cloud };
         this.velocityVariable.material.uniforms.uMix = { value: 1.0 };
@@ -147,8 +169,12 @@ class GPGPUStarfield {
     getVelocityShader() {
         return `
             uniform float uTime;
-            uniform vec3 uMouse;
+            uniform vec3 uRayO;
+            uniform vec3 uRayD;
+            uniform float uPointerOn;
             uniform float uMouseSpeed;
+            uniform float uStiff;
+            uniform float uDamp;
             uniform sampler2D uTargetA;
             uniform sampler2D uTargetB;
             uniform float uMix;
@@ -272,8 +298,8 @@ class GPGPUStarfield {
                 float freeAmt = mix(targetA.w, targetB.w, uMix); // 1 = drifting cloud, 0 = held in a shape
                 float held = 1.0 - freeAmt;
 
-                // Medium damping for fluid motion
-                vel *= 0.94;
+                // Medium damping for fluid motion (held stars use the formation's own damping)
+                vel *= mix(0.94, uDamp, held);
 
                 // Curl noise - increased for visible swirling (calmer while holding a shape)
                 vec3 curl = computeCurl(pos, uTime);
@@ -297,14 +323,20 @@ class GPGPUStarfield {
                 vel += toCenter * 0.003 * smoothstep(350.0, 100.0, distFromCenter) * freeAmt;
 
                 // Spring toward the formation target
-                vel += (target - pos) * 0.0075 * held;
+                vel += (target - pos) * uStiff * held;
 
-                // Mouse interaction - gentle
-                vec3 toMouse = pos - uMouse;
-                float mouseDist = length(toMouse);
-                if (mouseDist < 250.0 && mouseDist > 0.1) {
-                    float force = (1.0 - mouseDist / 250.0) * uMouseSpeed * 3.0;
-                    vel += normalize(toMouse) * force;
+                // Pointer: stars are pushed away from the line of sight through the cursor,
+                // harder while the cursor is moving, so it leaves a wake in the field.
+                vec3 rel = pos - uRayO;
+                vec3 away = rel - uRayD * dot(rel, uRayD);
+                float pd = length(away);
+                const float REACH = 120.0;
+                if (pd < REACH && pd > 0.01) {
+                    float fall = 1.0 - pd / REACH;
+                    float push = fall * fall * (0.07 + uMouseSpeed * 20.0) * uPointerOn;
+                    vel += (away / pd) * push * mix(1.0, 2.4, held);
+                    // a little swirl around the line, so the wake curls instead of just parting
+                    vel += normalize(cross(uRayD, away)) * push * 0.55;
                 }
 
                 // Calculate speed
@@ -439,14 +471,52 @@ class GPGPUStarfield {
         if (!this.formations[name]) name = 'cloud';
         if (name === this.formB) return;
         // Start from whichever shape the stars are closer to right now.
-        this.formA = this.mix > 0.5 ? this.formB : this.formA;
+        this.formA = this.mix > 0.5 && this.formations[this.formB] ? this.formB : this.formA;
         this.formB = name;
         this.mix = 0;
         const u = this.velocityVariable.material.uniforms;
         u.uTargetA.value = this.formations[this.formA];
         u.uTargetB.value = this.formations[this.formB];
         u.uMix.value = 0;
+        const art = name === 'art0' || name === 'art1';
+        this.stiffTo = art ? 0.03 : 0.0075;
+        this.dampTo = art ? 0.885 : 0.94;
+        this.mixSpeed = art ? 0.03 : 0.012;
+        if (this.particles) {
+            const pu = this.particles.material.uniforms;
+            pu.uColorA.value = this.colors[this.formA] || this.white;
+            pu.uColorB.value = this.colors[this.formB] || this.white;
+            pu.uColorMix.value = 0;
+        }
     }
+
+    // Gather the stars into a picture.
+    //   targets: Float32Array, 4 per star: x, y, z, free (1 = keeps drifting, 0 = takes its place)
+    //   colors:  Uint8Array, 4 per star: r, g, b, 255 for a star that is part of the picture
+    // Two slots alternate, so one picture can turn into the next.
+    setArt(targets, colors) {
+        if (!this.formations || !this.particles) return;
+        const size = this.textureSize;
+        const keep = this.mix > 0.5 ? this.formB : this.formA; // the shape the stars will start from
+        const name = keep === 'art0' ? 'art1' : 'art0';
+        if (!this.formations[name]) {
+            const t = new THREE.DataTexture(new Float32Array(size * size * 4), size, size, THREE.RGBAFormat, THREE.FloatType);
+            t.minFilter = THREE.NearestFilter; t.magFilter = THREE.NearestFilter;
+            this.formations[name] = t;
+            const c = new THREE.DataTexture(new Uint8Array(size * size * 4), size, size, THREE.RGBAFormat);
+            c.minFilter = THREE.NearestFilter; c.magFilter = THREE.NearestFilter;
+            this.colors[name] = c;
+        }
+        this.formations[name].image.data.set(targets);
+        this.formations[name].needsUpdate = true;
+        this.colors[name].image.data.set(colors);
+        this.colors[name].needsUpdate = true;
+        if (this.formB === name) this.formB = ''; // same slot, new picture: let setFormation run again
+        this.setFormation(name);
+    }
+
+    // Number of stars (targets and colours passed to setArt hold 4 values for each).
+    get starCount() { return this.textureSize * this.textureSize; }
 
     createParticles() {
         const geometry = new THREE.BufferGeometry();
@@ -474,18 +544,27 @@ class GPGPUStarfield {
                 uPositions: { value: null }, // Will be updated from GPGPU
                 uVelocities: { value: null },
                 uTime: { value: 0 },
-                uCameraPosition: { value: this.camera.position }
+                uCameraPosition: { value: this.camera.position },
+                uColorA: { value: this.white },
+                uColorB: { value: this.white },
+                uColorMix: { value: 1 },
+                uPixelRatio: { value: Math.min(window.devicePixelRatio || 1, 2) }
             },
             vertexShader: `
                 uniform sampler2D uPositions;
                 uniform sampler2D uVelocities;
                 uniform float uTime;
                 uniform vec3 uCameraPosition;
+                uniform sampler2D uColorA;
+                uniform sampler2D uColorB;
+                uniform float uColorMix;
+                uniform float uPixelRatio;
 
                 attribute vec2 reference;
 
                 varying float vSpeed;
                 varying float vDepth;
+                varying vec4 vTint; // rgb = picture colour, a = how much this star belongs to a picture
 
                 void main() {
                     vec4 positionData = texture2D(uPositions, reference);
@@ -501,9 +580,15 @@ class GPGPUStarfield {
                     float dist = distance(pos, uCameraPosition);
                     vDepth = 1.0 - smoothstep(0.0, 400.0, dist);
 
-                    // Point size based on depth only (no speed boost for stability)
+                    // Colour: white in the open field, the picture's colour when gathered into one
+                    vec4 ca = texture2D(uColorA, reference);
+                    vec4 cb = texture2D(uColorB, reference);
+                    vTint = mix(ca, cb, uColorMix);
+
+                    // Point size based on depth only (no speed boost for stability).
+                    // Stars that make up a picture are a little larger so it reads as an image.
                     float baseSize = 1.5 + vDepth * 3.0;
-                    gl_PointSize = baseSize;
+                    gl_PointSize = baseSize + vTint.a * (1.1 + 0.7 * uPixelRatio);
 
                     // Very gentle twinkling effect
                     float twinkle = sin(uTime * 0.5 + pos.x * 0.05 + pos.y * 0.05) * 0.15 + 0.85;
@@ -516,6 +601,7 @@ class GPGPUStarfield {
             fragmentShader: `
                 varying float vSpeed;
                 varying float vDepth;
+                varying vec4 vTint;
 
                 void main() {
                     // Circular particle
@@ -534,9 +620,10 @@ class GPGPUStarfield {
                     // Depth-based opacity
                     float alpha = (coreGlow + bloom) * (0.5 + vDepth * 0.5 + speedGlow);
 
-                    // Monochromatic white
-                    vec3 color = vec3(1.0);
+                    // White in the field; the picture's own colour when the star is part of one
+                    vec3 color = mix(vec3(1.0), vTint.rgb * 1.5, vTint.a);
                     vec3 finalColor = color * (1.0 + bloom * 1.2 + speedGlow);
+                    alpha *= mix(1.0, 1.35, vTint.a);
 
                     gl_FragColor = vec4(finalColor, alpha);
                 }
@@ -550,35 +637,48 @@ class GPGPUStarfield {
         this.scene.add(this.particles);
     }
 
+    // Called when the pointer moves: x and y run from -1 to 1 across the window.
     updateMouse(mouseX, mouseY) {
-        // Convert screen space to world space
-        const newMousePos = new THREE.Vector2(mouseX, mouseY);
-
-        // Calculate mouse speed
-        this.mouseSpeed = newMousePos.distanceTo(this.lastMousePos);
-        this.lastMousePos.copy(newMousePos);
-
-        // Update 3D mouse position
-        this.mouse.x = mouseX * 50;
-        this.mouse.y = mouseY * 50;
-        this.mouse.z = 0;
+        const dx = mouseX - this.lastMousePos.x, dy = mouseY - this.lastMousePos.y;
+        this.mouseSpeed = Math.min(0.12, this.mouseSpeed + Math.sqrt(dx * dx + dy * dy) * 0.5);
+        this.lastMousePos.set(mouseX, mouseY);
+        this.pointerOn = 1;
     }
+
+    // The line of sight through the cursor, in world space (main.js works it out each frame).
+    setPointerRay(origin, dir) {
+        this.rayOrigin.copy(origin);
+        this.rayDir.copy(dir);
+    }
+
+    pointerLeft() { this.pointerOn = 0; }
 
     update(time) {
         if (!this.gpuCompute || !this.particles) return;
         // Update GPGPU uniforms
-        this.velocityVariable.material.uniforms.uTime.value = time;
-        this.velocityVariable.material.uniforms.uMouse.value = this.mouse;
-        this.velocityVariable.material.uniforms.uMouseSpeed.value = this.mouseSpeed;
+        const vu = this.velocityVariable.material.uniforms;
+        vu.uTime.value = time;
+        vu.uMouseSpeed.value = this.mouseSpeed;
+        vu.uPointerOn.value += (this.pointerOn - vu.uPointerOn.value) * 0.08;
 
         // Decay mouse speed
-        this.mouseSpeed *= 0.95;
+        this.mouseSpeed *= 0.9;
 
-        // Ease the blend between formations
+        // Ease the pull strength toward what the current formation asks for
+        if (this.stiffTo !== undefined) {
+            this.stiff += (this.stiffTo - this.stiff) * 0.06;
+            this.damp += (this.dampTo - this.damp) * 0.06;
+            vu.uStiff.value = this.stiff;
+            vu.uDamp.value = this.damp;
+        }
+
+        // Ease the blend between formations (positions and colours together)
         if (this.mix < 1) {
-            this.mix = Math.min(1, this.mix + 0.012);
+            this.mix = Math.min(1, this.mix + this.mixSpeed);
             const m = this.mix;
-            this.velocityVariable.material.uniforms.uMix.value = m * m * (3 - 2 * m);
+            const eased = m * m * (3 - 2 * m);
+            vu.uMix.value = eased;
+            this.particles.material.uniforms.uColorMix.value = eased;
         }
 
         // Compute GPGPU (this updates position and velocity textures)

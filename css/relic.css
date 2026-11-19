@@ -98,7 +98,10 @@ main, .footer { position: relative; z-index: 2; }
 
 /* ---------- type ----------
    Headings are light mono capitals with wide tracking (the original Relic voice).
-   One word per heading may be set in chrome blackletter (.goth), which echoes the logo. */
+   One word per heading may be set in chrome blackletter (.goth), which echoes the logo.
+   The blackletter word is locked to the line: same baseline as the capitals, and sized so its
+   lowercase letters are exactly as tall as the mono capitals (x-height .43em x 1.71 = cap height
+   .735em). Only its initial rises above the line. Keep 1.71em and a plain baseline everywhere. */
 .display, .h1, .h2, .h3, .quote, .cta__title { font-family: var(--mono); font-weight: 300; text-transform: uppercase; }
 .display { font-size: clamp(1.15rem, 2.9vw, 2.7rem); letter-spacing: .2em; line-height: 1.32; }
 .h1 { font-size: clamp(1.4rem, 3.7vw, 3.5rem); letter-spacing: .16em; line-height: 1.24; }
@@ -106,8 +109,9 @@ main, .footer { position: relative; z-index: 2; }
 .h2 { font-size: clamp(1.15rem, 2.5vw, 2.3rem); letter-spacing: .2em; line-height: 1.32; }
 .h3 { font-size: clamp(.92rem, 1.25vw, 1.15rem); font-weight: 400; letter-spacing: .18em; line-height: 1.45; }
 .goth {
-    font-family: var(--goth); font-weight: 400; font-style: normal; font-size: 1.95em; line-height: 0; letter-spacing: 0; text-transform: capitalize; white-space: nowrap;
-    margin-inline: .02em .08em; padding: .14em .05em; vertical-align: -.035em;
+    font-family: var(--goth); font-weight: 400; font-style: normal; font-size: 1.71em; line-height: 0; letter-spacing: 0; text-transform: capitalize; white-space: nowrap;
+    /* the padding only gives the swashes room inside the clipped chrome fill; the margins take it back */
+    margin-inline: -.07em .05em; padding: .16em .12em; vertical-align: baseline;
     background: linear-gradient(100deg, transparent 42%, rgba(255, 255, 255, .95) 50%, transparent 58%) 130% 0 / 260% 100% no-repeat, var(--chrome);
     -webkit-background-clip: text; background-clip: text; color: transparent; -webkit-text-fill-color: transparent;
     filter: drop-shadow(0 0 16px rgba(0, 206, 209, .3));
@@ -306,6 +310,51 @@ main, .footer { position: relative; z-index: 2; }
 }
 .work__row:focus-visible { outline-offset: -2px; }
 
+/* ---------- showcase: artwork as 3D scenes ----------
+   A pinned window at the top of the gallery. Each scroll step (.showcase__step) names one
+   picture; the 3D background builds it out of the stars (js/artscene.js) and its caption comes
+   up here. .show__img is the same picture as a plain image, in the same place, for when there
+   is no 3D (reduced motion, no WebGL): its boxes mirror ArtStage.boxFor() in js/artscene.js,
+   so change the two together. Without JavaScript the showcase is a plain column of pictures. */
+.showcase { display: grid; gap: clamp(28px, 5vw, 64px); width: min(var(--max), 100% - 2 * var(--gutter)); margin: 0 auto clamp(48px, 7vw, 96px); }
+.showcase__pin { display: contents; }
+.showcase__rail, .showcase__step { display: none; }
+.show { display: grid; gap: 16px; justify-items: start; }
+.show__img { width: auto; max-height: 86vh; }
+.show__cap { display: grid; gap: 12px; }
+.show__n { font: 500 .6875rem/1 var(--mono); letter-spacing: .22em; color: var(--cyan-ink); }
+.show__n i { font-style: normal; color: var(--ink-4); margin-inline: .25em; }
+.show__t { --k: 1; font: 300 clamp(1.1rem, 1.9vw, 1.8rem)/1.3 var(--mono); letter-spacing: .2em; text-transform: uppercase; }
+.show__d { --k: 2; max-width: 46ch; font: 400 .72rem/1.55 var(--mono); letter-spacing: .08em; color: var(--ink-2); }
+
+.js .showcase { --step: 80vh; --win: 100vh; display: block; position: relative; width: auto; height: calc(var(--n) * var(--step) + var(--win)); margin: 0 0 clamp(56px, 8vw, 110px); }
+@supports (height: 1svh) { .js .showcase { --step: 80svh; --win: 100svh; } }
+.js .showcase__pin { display: block; position: sticky; top: 0; height: var(--win); overflow: hidden; }
+/* A step is "on" while it holds the middle of the window. The first starts a little before the window pins. */
+.js .showcase__step { display: block; position: absolute; left: 0; width: 1px; top: calc(var(--win) * .5 + var(--i) * var(--step)); height: var(--step); visibility: hidden; pointer-events: none; }
+.js .showcase__step[data-show="0"] { top: calc(var(--win) * .2); height: calc(var(--step) + var(--win) * .3); }
+.js .show { display: block; position: absolute; inset: 0; opacity: 0; visibility: hidden; transition: opacity .4s var(--ease), visibility 0s linear .4s; }
+.js .show.is-active { opacity: 1; visibility: visible; transition: opacity .6s var(--ease) .1s, visibility 0s; }
+.js .show__img { position: absolute; left: 45%; top: 10%; width: 44%; height: 80%; max-height: none; object-fit: contain; }
+.js .show--wide .show__img { left: 33%; top: 13.5%; width: 60%; height: 70%; }
+.has-art .show__img { display: none; } /* the 3D background draws the picture */
+.js .show__cap { position: absolute; left: var(--gutter); top: 50%; width: min(27vw, 420px); gap: 16px; transform: translateY(-50%); text-shadow: 0 0 24px #000, 0 0 6px rgba(0, 0, 0, .85); }
+.js .show__cap > * { opacity: 0; transform: translateY(14px); transition: opacity .35s var(--ease), transform .35s var(--ease); }
+.js .show.is-active .show__cap > * { opacity: 1; transform: none; transition: opacity .6s var(--ease) calc(.2s + var(--k, 0) * .08s), transform .9s var(--ease-out) calc(.2s + var(--k, 0) * .08s); }
+.js .showcase__rail { display: flex; gap: 6px; position: absolute; left: var(--gutter); bottom: 108px; padding: 0; list-style: none; }
+.showcase__rail li { width: 20px; height: 2px; background: var(--line-2); transition: width .6s var(--ease-out), background .4s; }
+.showcase__rail li.is-active { width: 44px; background: var(--cyan-ink); box-shadow: 0 0 12px var(--cyan); }
+@media (max-aspect-ratio: 1299/1000) {
+    /* tall or narrow window: picture above, caption below */
+    .js .show__img, .js .show--wide .show__img { left: 5%; top: 13%; width: 90%; height: 58%; }
+    .js .show__cap { right: var(--gutter); top: 74%; width: auto; gap: 10px; transform: none; }
+    .js .showcase__rail { bottom: 30px; }
+}
+@media (hover: hover) and (pointer: fine) {
+    /* js/site.js leans these lists with the scroll speed */
+    .motion-full [data-sv] { will-change: transform; }
+}
+
 /* ---------- gallery ---------- */
 .g-filters { display: inline-flex; flex-wrap: wrap; gap: 4px; padding: 4px; border: 1px solid var(--line); border-radius: 3px; background: var(--panel); margin-bottom: clamp(24px, 3vw, 40px); }
 .g-filter { padding: .95em 1.4em; border-radius: 2px; font: 500 .6875rem/1 var(--mono); letter-spacing: .18em; text-transform: uppercase; color: var(--ink-3); transition: color .25s, background .3s; }
@@ -399,8 +448,12 @@ kbd { padding: 4px 6px; border: 1px solid var(--line-2); border-radius: 2px; fon
 /* ---------- closing call to action ---------- */
 .cta { text-align: center; }
 .cta__title { font-size: clamp(1.4rem, 5vw, 4.6rem); letter-spacing: .14em; line-height: 1.24; margin-bottom: clamp(24px, 3vw, 44px); }
-.cta__title .goth { font-size: 2.1em; }
+.cta .kicker { justify-content: center; }
+/* A picture fills the window behind this block: darken only the middle, behind the words. */
+.has-art .cta[data-art-mode="backdrop"] .wrap { position: relative; isolation: isolate; }
+.has-art .cta[data-art-mode="backdrop"] .wrap::before { content: ''; position: absolute; z-index: -1; inset: -16% 4%; background: radial-gradient(closest-side, rgba(0, 0, 0, .58), rgba(0, 0, 0, .3) 55%, rgba(0, 0, 0, 0)); pointer-events: none; }
 .cta .lede { margin-inline: auto; }
+.cta .quote { margin-bottom: clamp(20px, 2.4vw, 34px); }
 .cta .btns { justify-content: center; margin-top: clamp(26px, 3vw, 40px); }
 .cta__mail { margin-top: 34px; font: 400 .78rem var(--mono); letter-spacing: .06em; color: var(--ink-3); }
 .cta__mail a { color: var(--ink-2); border-bottom: 1px solid var(--line-2); transition: color .2s, border-color .2s; }
@@ -693,7 +746,7 @@ kbd { padding: 4px 6px; border: 1px solid var(--line-2); border-radius: 2px; fon
 .motion-reduced { scroll-behavior: auto; }
 .motion-reduced *, .motion-reduced *::before, .motion-reduced *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .2s !important; transition-delay: 0s !important; }
 .motion-reduced [data-split] .w--goth .wi { filter: none !important; }
-.motion-reduced [data-reveal], .motion-reduced [data-split] .wi, .motion-reduced .hero__logo, .motion-reduced .hero .rise { transform: none !important; }
+.motion-reduced [data-reveal], .motion-reduced [data-split] .wi, .motion-reduced .hero__logo, .motion-reduced .hero .rise, .motion-reduced .show__cap > * { transform: none !important; }
 .motion-reduced .statement[data-words] .w { opacity: 1; }
 .motion-reduced .ticker__track { animation: none; }
 .motion-reduced .aura { display: none; }

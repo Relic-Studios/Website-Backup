@@ -99,6 +99,9 @@ head-->
                 <h2 class="h2" data-split>Stills, renders and live <span class="goth" data-keep>sets</span></h2>
             </div>
         </header>
+    </div>
+    {{> showcase}}
+    <div class="wrap">
         {{> gallery}}
         <div class="g-cta" data-reveal>
             <p>Like what you see? Let's make something for your next event.</p>
@@ -144,7 +147,7 @@ head-->
     </div>
 </section>
 
-<section class="sec sec--line cta" id="contact" data-section="Contact" data-form="cloud">
+<section class="sec sec--line cta" id="contact" data-section="Contact" {{> art src=assets/images/pretty.jpg tall="assets/images/thelostgirl4 (00000).jpg" mode=backdrop}}>
     <div class="wrap">
         <p class="kicker" data-reveal><i>05</i><span data-scramble>Contact</span></p>
         <h2 class="cta__title" data-split>Let's Create Something <span class="goth" data-keep>Epic</span></h2>

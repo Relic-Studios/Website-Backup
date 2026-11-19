@@ -34,6 +34,22 @@ const ver = (rel) => {
 const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 const url = (p) => p.split('/').map(encodeURIComponent).join('/');
 const pad = (n) => String(n).padStart(2, '0');
+// Depth map for a picture, if tools/make-depth.py has made one (same file naming as the thumbnails).
+const depthOf = (src) => {
+    const rel = `assets/images/depth/${path.basename(src).replace(/\.[^.]+$/, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')}.webp`;
+    return fs.existsSync(path.join(ROOT, rel)) ? rel : '';
+};
+// Attributes that tell the 3D background which picture a section shows (read by js/site.js).
+// `tall` (optional) is a second, upright picture used instead when the window is taller than wide.
+const artAttrs = (root, src, mode, tall) => {
+    const one = (src, tag) => {
+        const m = media[src];
+        if (!m) throw new Error(`art: no thumbnail recorded for "${src}" (run npm run thumbs)`);
+        const depth = depthOf(src);
+        return `data-art${tag}="${root}${url(m.src)}" data-art${tag}-full="${root}${url(src)}"${depth ? ` data-depth${tag}="${root}${url(depth)}"` : ''}`;
+    };
+    return `data-form="art" ${one(src, '')}${tall ? ' ' + one(tall, '-tall') : ''}${mode ? ` data-art-mode="${mode}"` : ''}`;
+};
 
 const ICON = {
     arrow: '<svg class="i-arrow" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M7 17 17 7M8 7h9v9"/></svg>',
@@ -45,7 +61,7 @@ const ICON = {
 /* ---------- partials ---------- */
 
 function workRows(rows, root) {
-    return `<ol class="work" data-stagger>
+    return `<ol class="work" data-stagger data-sv>
 ${rows.map((w) => `    <li class="work__item" data-reveal><a class="work__row" href="${root}projects/${w.slug}.html">
         <span class="work__n">${w.n}</span>
         <span class="work__t">${esc(w.title)}</span>
@@ -79,6 +95,38 @@ const PARTIALS = {
         return `<div class="ticker" aria-hidden="true"><div class="ticker__track">${items}${items}</div></div>`;
     },
 
+    // Pinned strip at the top of the gallery: each scroll step names one picture, which the 3D
+    // background turns into a scene (js/artscene.js). The <img> is what shows without 3D.
+    showcase({ root }) {
+        const items = data.showcase.map((src) => {
+            const g = data.gallery.find((x) => x.src === src);
+            if (!g) throw new Error(`showcase: "${src}" is not in the gallery list`);
+            return { g, m: media[src], src, cap: g.caption.replace(/ \| /g, ' · ') };
+        });
+        const n = items.length;
+        const figures = items.map(({ g, m, cap }, i) => `        <figure class="show${m.width > m.height ? ' show--wide' : ''}${i === 0 ? ' is-active' : ''}">
+            <img class="show__img" src="${root}${url(m.src)}" width="${m.width}" height="${m.height}" alt="${esc(g.title)}: ${esc(cap)}" loading="lazy" decoding="async">
+            <figcaption class="show__cap">
+                <span class="show__n">${pad(i + 1)} <i>/</i> ${pad(n)}</span>
+                <strong class="show__t">${esc(g.title)}</strong>
+                <span class="show__d">${esc(cap)}</span>
+            </figcaption>
+        </figure>`).join('\n');
+        const steps = items.map(({ src }, i) => `    <div class="showcase__step" style="--i:${i}" data-section="Gallery" data-show="${i}" ${artAttrs(root, src)}></div>`).join('\n');
+        return `<div class="showcase" style="--n:${n}">
+    <div class="showcase__pin">
+${figures}
+        <ol class="showcase__rail" aria-hidden="true">${items.map((x, i) => `<li${i === 0 ? ' class="is-active"' : ''}></li>`).join('')}</ol>
+    </div>
+${steps}
+</div>`;
+    },
+
+    // {{> art src=assets/images/x.jpg mode=backdrop}} inside a tag: that section shows the picture in 3D.
+    art({ root }, args) {
+        return artAttrs(root, args.src, args.mode, args.tall);
+    },
+
     gallery({ root }) {
         const kinds = { image: 'Image', video: 'Video', live: 'Live' };
         const labels = [['image', 'Images'], ['video', 'Videos'], ['live', 'Live']];
@@ -100,7 +148,7 @@ const PARTIALS = {
         return `<div class="g-filters" role="group" aria-label="Filter the gallery">
         ${filters}
 </div>
-<div class="g-grid" id="gallery-grid">
+<div class="g-grid" id="gallery-grid" data-sv>
 ${cards}
 </div>`;
     },
@@ -437,6 +485,7 @@ ${scene ? `<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/thr
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/misc/GPUComputationRenderer.js" defer></script>
 <script src="${root}js/gpgpu-starfield.js${ver('js/gpgpu-starfield.js')}" defer></script>
 <script src="${root}js/simple-bloom.js${ver('js/simple-bloom.js')}" defer></script>
+<script src="${root}js/artscene.js${ver('js/artscene.js')}" defer></script>
 <script src="${root}js/main.js${ver('js/main.js')}" defer></script>
 ` : ''}<script src="${root}js/site.js${ver('js/site.js')}" defer></script>
 <script src="${root}js/analytics.js${ver('js/analytics.js')}" defer></script>

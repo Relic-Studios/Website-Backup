@@ -38,8 +38,11 @@ tools/build.cjs     wraps every page in the shared head, navigation and footer -
 tools/check-pages.cjs   the checks behind `npm run check`
 css/relic.css       all styles
 js/site.js          page behaviour: menu, reveals, gallery and lightbox, tabs, video click-to-load
-js/main.js          the starfield scene and its camera
-js/gpgpu-starfield.js, js/simple-bloom.js   the star simulation and the glow
+js/main.js          the 3D background: which shape or picture is showing, and the camera
+js/gpgpu-starfield.js   the star simulation
+js/artscene.js      pictures as 3D scenes: the sheet with relief, and where each star goes
+js/simple-bloom.js  how a frame is put together: star glow, the picture, pointer ripple, scroll stretch
+tools/make-depth.py depth maps for the pictures shown as 3D scenes (assets/images/depth/)
 js/analytics.js     analytics
 assets/             images, videos, headshots
 ```
@@ -68,8 +71,26 @@ To add a project page: copy one of `_src/pages/projects-*.html`, add its row to 
   frames with corner ticks, glass panels, a status line along the bottom edge.
 - **Starfield.** The stars gather into a shape per section: cloud, galaxy, ring, crescent, helix or
   an LED-stage wall. A section picks its shape with `data-form="..."`.
-- **Motion.** Visitors whose device asks for reduced motion get a calm version. The footer has a
-  switch, and `?motion=full` or `?motion=reduced` in the address forces either one.
+- **Artwork as 3D scenes.** A section can show a picture instead of a shape: the stars gather into
+  it as coloured points, the picture burns in over them as a sheet with real relief, and it turns
+  with the pointer and the scroll. Standing still, a picture takes about a second and a half to
+  form; scrolling into its section brings it in faster, so a steady scroll still shows each one.
+  Where it is used: the showcase at the top of the home page gallery (pictures listed in
+  `showcase` in `_src/data.cjs`), and a full-window scene behind the closing block of the home,
+  About, Get Involved and Aidan Poole pages. Project pages have none (they stay text only). How to
+  add one is in `_src/README.md`.
+- **Pointer and scroll.** Moving the pointer fast across a picture breaks it into a lattice of
+  light points that closes again; a click or tap sends a ring through it; fast scrolling bows and
+  smears the whole background. Stars swerve away from the pointer while it moves.
+- **Slow devices.** If most frames take too long, `js/main.js` draws the background with fewer
+  pixels, one step at a time, and undoes a step that did not help.
+- **Blackletter size.** The `goth` word sits on the same baseline as the capitals and is sized
+  (1.71em) so its lowercase letters are exactly as tall as them. Do not give it another size or a
+  vertical offset anywhere.
+- **Motion.** Visitors whose device asks for reduced motion get a calm version: slower stars, no
+  pointer or scroll effects, and pictures as plain images instead of 3D scenes. The footer has a
+  switch, and `?motion=full` or `?motion=reduced` in the address forces either one. (Windows
+  with "Animation effects" turned off counts as asking for reduced motion.)
 
 ## Forms
 

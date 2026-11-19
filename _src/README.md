@@ -31,6 +31,8 @@ shared blocks written as `{{> name key=value}}`:
 | `worklist [group=credits\|software]` | the numbered work list |
 | `ticker` | scrolling strip of project names |
 | `gallery` | gallery grid with filters |
+| `showcase` | pinned strip of pictures shown as 3D scenes (the list is `showcase` in `data.cjs`) |
+| `art src=assets/images/x.jpg [mode=backdrop] [tall=assets/images/y.jpg]` | written inside a section's opening tag: that section shows the picture as a 3D scene |
 | `services_teaser`, `services_full` | service cards |
 | `achievements` | achievement cards (About) |
 | `practice_articles` | the same achievement texts written out in full (Work index) |
@@ -39,6 +41,31 @@ shared blocks written as `{{> name key=value}}`:
 | `yt id=... title="..."` | YouTube preview that loads the player on click |
 | `crumbs`, `pager` | breadcrumbs, previous/next project |
 | `icon name=arrow\|right\|play\|discord` | inline icon |
+
+### Pictures as 3D scenes
+
+While a section with `{{> art src=...}}` in its opening tag holds the middle of the window, the 3D
+background builds that picture out of the stars. Without `mode` the picture stands beside the text;
+with `mode=backdrop` it fills the window behind the text. A backdrop is cropped to fill the window,
+so a wide picture loses its sides on a phone: `tall=` names a second, upright picture to use when
+the window is taller than it is wide. Put a path that contains spaces in quotes. Example:
+
+```html
+<section class="sec cta" data-section="Contact" {{> art src=assets/images/pretty.jpg tall="assets/images/thelostgirl4 (00000).jpg" mode=backdrop}}>
+```
+
+A `cta` block with a backdrop gets a soft dark patch behind its words (in `css/relic.css`), so
+bright pictures do not wash out the text. Check any new picture behind real text before keeping it.
+
+To add a picture:
+
+1. It needs a web-size copy: put it in the gallery list in `data.cjs` and run `npm run thumbs`.
+2. For the showcase, add its path to `showcase` in `data.cjs`.
+3. Make its depth map (this is what gives it relief): `python tools/make-depth.py assets/images/<file>`.
+   The tool's header says which Python to use. Without a depth map the picture still shows, flatter.
+4. `npm run check`.
+
+Visitors with reduced motion, or without WebGL, see the same pictures as plain images.
 
 Headings: one word may be wrapped as `<span class="goth" data-keep>Word</span>` to set it in chrome
 blackletter. One per heading at most.

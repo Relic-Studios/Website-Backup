@@ -91,7 +91,7 @@ function checkRef(where, fromDir, raw, kind) {
     }
 }
 
-const REF_ATTRS = ['href', 'src', 'poster', 'data-poster', 'data-video', 'data-photo', 'data-alt-src', 'data-src', 'data-full'];
+const REF_ATTRS = ['href', 'src', 'poster', 'data-poster', 'data-video', 'data-photo', 'data-alt-src', 'data-src', 'data-full', 'data-art', 'data-art-full', 'data-depth', 'data-art-tall', 'data-art-tall-full', 'data-depth-tall'];
 const count = (html, re) => (html.match(re) || []).length;
 
 const sitemapWanted = new Set();
