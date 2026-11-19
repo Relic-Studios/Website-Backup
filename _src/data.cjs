@@ -30,26 +30,28 @@ const work = [
 ];
 
 // Gallery. `src` is the full file, `thumb` is made by tools/make-thumbs.cjs.
+// The studio's own stills and films are 3D work: built in Cinema 4D, rendered in Octane.
+// None of it is AI. Never caption a piece as AI-made, AI-assisted or "generative".
 const gallery = [
-    { type: 'image', src: 'assets/images/eldritch0352.jpg', title: 'Eldritch', caption: 'AI-driven concept art | Stable Diffusion, ComfyUI' },
-    { type: 'image', src: 'assets/images/hallway_Main0006_00000.jpg', title: 'The Hallway', caption: '3D environment | Cinema 4D' },
-    { type: 'image', src: 'assets/images/thelostgirl2_00000.jpg', title: 'The Lost Girl II', caption: 'Character art | AI-assisted workflow' },
-    { type: 'image', src: 'assets/images/newidk.jpg', title: 'Emergence', caption: 'AI-driven concept art | ComfyUI' },
-    { type: 'image', src: 'assets/images/pretty.jpg', title: 'Ethereal', caption: 'Generative portrait | Custom SD pipeline' },
-    { type: 'image', src: 'assets/images/thelostgirl4 (00000).jpg', title: 'The Lost Girl IV', caption: 'Character art | AI-assisted workflow' },
-    { type: 'image', src: 'assets/images/woman_00000.jpg', title: 'Portrait Study', caption: 'AI-generated art | Custom pipeline' },
-    { type: 'image', src: 'assets/images/newidk2.jpg', title: 'Convergence', caption: 'AI-driven concept art | ComfyUI' },
+    { type: 'image', src: 'assets/images/eldritch0352.jpg', title: 'Eldritch', caption: '3D concept art | Cinema 4D, Octane' },
+    { type: 'image', src: 'assets/images/hallway_Main0006_00000.jpg', title: 'The Hallway', caption: '3D environment | Cinema 4D, Octane' },
+    { type: 'image', src: 'assets/images/thelostgirl2_00000.jpg', title: 'The Lost Girl II', caption: '3D character art | Cinema 4D, Octane' },
+    { type: 'image', src: 'assets/images/newidk.jpg', title: 'Emergence', caption: '3D concept art | Cinema 4D, Octane' },
+    { type: 'image', src: 'assets/images/pretty.jpg', title: 'Ethereal', caption: '3D portrait | Cinema 4D, Octane' },
+    { type: 'image', src: 'assets/images/thelostgirl4 (00000).jpg', title: 'The Lost Girl IV', caption: '3D character art | Cinema 4D, Octane' },
+    { type: 'image', src: 'assets/images/woman_00000.jpg', title: 'Portrait Study', caption: '3D portrait | Cinema 4D, Octane' },
+    { type: 'image', src: 'assets/images/newidk2.jpg', title: 'Convergence', caption: '3D concept art | Cinema 4D, Octane' },
     { type: 'image', src: 'assets/images/PXL_20250727_062609308.NIGHT.RAW-01.COVER.jpg', title: 'Night Event', caption: 'Live event documentation | 2025' },
 
     { type: 'video', src: 'assets/videos/Comp 1_2.mp4', poster: 'assets/images/video-thumbnails/Comp_1_2.jpg', title: 'Motion Graphics Reel', caption: 'Cinema 4D, After Effects' },
-    { type: 'video', src: 'assets/videos/Main6.mp4', poster: 'assets/images/video-thumbnails/Main6.jpg', title: 'Abstract Visuals', caption: 'Generative motion design | Cinema 4D' },
-    { type: 'video', src: 'assets/videos/newwatcher_tvai_optimized.mp4', poster: 'assets/images/video-thumbnails/newwatcher_tvai_optimized.jpg', title: 'The Watcher', caption: 'AI-enhanced animation | Stable Diffusion' },
-    { type: 'video', src: 'assets/videos/orb.mp4', poster: 'assets/images/video-thumbnails/orb.jpg', title: 'Orb', caption: 'Generative art | TouchDesigner' },
+    { type: 'video', src: 'assets/videos/Main6.mp4', poster: 'assets/images/video-thumbnails/Main6.jpg', title: 'Abstract Visuals', caption: '3D motion design | Cinema 4D, Octane' },
+    { type: 'video', src: 'assets/videos/newwatcher_tvai_optimized.mp4', poster: 'assets/images/video-thumbnails/newwatcher_tvai_optimized.jpg', title: 'The Watcher', caption: '3D animation | Cinema 4D, Octane' },
+    { type: 'video', src: 'assets/videos/orb.mp4', poster: 'assets/images/video-thumbnails/orb.jpg', title: 'Orb', caption: 'Real-time art | TouchDesigner' },
 
     { type: 'live', src: 'assets/videos/20250418_201655.mp4', poster: 'assets/images/video-thumbnails/20250418_201655.jpg', title: 'Live Event Visuals', caption: 'Real-time VJ performance | TouchDesigner' },
     { type: 'live', src: 'assets/videos/20250418_220743.mp4', poster: 'assets/images/video-thumbnails/20250418_220743.jpg', title: 'LED Wall Performance', caption: 'Audio-reactive visuals | Live event' },
     { type: 'live', src: 'assets/videos/20250418_223044.mp4', poster: 'assets/images/video-thumbnails/20250418_223044.jpg', title: 'Immersive Stage Design', caption: 'Multi-screen live performance' },
-    { type: 'live', src: 'assets/videos/20250418_225001.mp4', poster: 'assets/images/video-thumbnails/20250418_225001.jpg', title: 'Festival Visuals', caption: 'Real-time generative visuals | Live event' },
+    { type: 'live', src: 'assets/videos/20250418_225001.mp4', poster: 'assets/images/video-thumbnails/20250418_225001.jpg', title: 'Festival Visuals', caption: 'Real-time visuals | Live event' },
     { type: 'live', src: 'assets/videos/20250418_235734.mp4', poster: 'assets/images/video-thumbnails/20250418_235734.jpg', title: 'Nightclub Performance', caption: 'Audio-reactive LED wall content' },
     { type: 'live', src: 'assets/videos/Snapchat-1817447126.mp4', poster: 'assets/images/video-thumbnails/Snapchat-1817447126.jpg', title: 'Live VJ Set', caption: 'On-site performance' },
     { type: 'live', src: 'assets/videos/Snapchat-721211222.mp4', poster: 'assets/images/video-thumbnails/Snapchat-721211222.jpg', title: 'Venue Visuals', caption: 'LED wall content | Live performance' },
@@ -233,4 +235,15 @@ const services = [
 
 const practice = ['3D animation', '3D sculpting', 'Live visuals and VJ performance', 'LED and large-format display content', 'Generative video', 'Diffusion model fine-tuning', 'StreamDiffusion', 'Notch', 'TouchDesigner', 'ComfyUI', 'AI software development'];
 
-module.exports = { LINKS, work, gallery, showcase, team, achievements, services, practice };
+// Pictures that play on the LED wall of the 3D truss cathedral (the closing scene of the home page).
+// Upright ones only: the wall is 9:16.
+const venuePics = [
+    'assets/images/newidk.jpg',
+    'assets/images/hallway_Main0006_00000.jpg',
+    'assets/images/woman_00000.jpg',
+    'assets/images/thelostgirl4 (00000).jpg',
+    'assets/images/newidk2.jpg',
+    'assets/images/thelostgirl2_00000.jpg'
+];
+
+module.exports = { LINKS, work, gallery, showcase, venuePics, team, achievements, services, practice };

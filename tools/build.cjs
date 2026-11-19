@@ -95,8 +95,11 @@ const PARTIALS = {
         return `<div class="ticker" aria-hidden="true"><div class="ticker__track">${items}${items}</div></div>`;
     },
 
-    // Pinned strip at the top of the gallery: each scroll step names one picture, which the 3D
-    // background turns into a scene (js/artscene.js). The <img> is what shows without 3D.
+    // Viewer at the top of the gallery: one picture at a time, which the 3D background turns into
+    // a scene (js/artscene.js). The visitor changes the picture by tapping or clicking a side of
+    // it, swiping, the arrow keys or the rail (js/site.js, initShowcase). The <img> is what shows
+    // without 3D. The showcase itself is the section; each .showcase__step is a hidden holder
+    // for one picture's files, and js/site.js copies the current one's attributes onto it.
     showcase({ root }) {
         const items = data.showcase.map((src) => {
             const g = data.gallery.find((x) => x.src === src);
@@ -105,21 +108,45 @@ const PARTIALS = {
         });
         const n = items.length;
         const figures = items.map(({ g, m, cap }, i) => `        <figure class="show${m.width > m.height ? ' show--wide' : ''}${i === 0 ? ' is-active' : ''}">
-            <img class="show__img" src="${root}${url(m.src)}" width="${m.width}" height="${m.height}" alt="${esc(g.title)}: ${esc(cap)}" loading="lazy" decoding="async">
+            <img class="show__img" src="${root}${url(m.src)}" width="${m.width}" height="${m.height}" alt="${esc(g.title)}: ${esc(cap)}" loading="lazy" decoding="async" draggable="false">
             <figcaption class="show__cap">
                 <span class="show__n">${pad(i + 1)} <i>/</i> ${pad(n)}</span>
                 <strong class="show__t">${esc(g.title)}</strong>
                 <span class="show__d">${esc(cap)}</span>
             </figcaption>
         </figure>`).join('\n');
-        const steps = items.map(({ src }, i) => `    <div class="showcase__step" style="--i:${i}" data-section="Gallery" data-show="${i}" ${artAttrs(root, src)}></div>`).join('\n');
-        return `<div class="showcase" style="--n:${n}">
+        const steps = items.map(({ src }, i) => `    <div class="showcase__step" data-show="${i}" ${artAttrs(root, src).replace('data-form="art" ', '')}></div>`).join('\n');
+        const rail = items.map(({ g }, i) => `<li><button type="button"${i === 0 ? ' class="is-active" aria-current="true"' : ''} aria-label="Picture ${i + 1} of ${n}: ${esc(g.title)}"></button></li>`).join('');
+        return `<div class="showcase" data-section="Gallery" ${artAttrs(root, items[0].src)}>
     <div class="showcase__pin">
 ${figures}
-        <ol class="showcase__rail" aria-hidden="true">${items.map((x, i) => `<li${i === 0 ? ' class="is-active"' : ''}></li>`).join('')}</ol>
+        <button type="button" class="showcase__go showcase__go--prev" aria-label="Previous picture">${ICON.right}</button>
+        <button type="button" class="showcase__go showcase__go--next" aria-label="Next picture">${ICON.right}</button>
+        <div class="showcase__ctl">
+            <ol class="showcase__rail">${rail}</ol>
+            <p class="showcase__hint" aria-hidden="true"><span class="showcase__hint-t">Swipe or tap a side</span><span class="showcase__hint-m">Click a side or use the arrow keys</span></p>
+        </div>
     </div>
 ${steps}
 </div>`;
+    },
+
+    // {{> venue src=assets/images/x.jpg [tall=...] [mode=backdrop]}} inside a tag: that section
+    // stands in the truss cathedral (js/venue.js), with the pictures of data.venuePics on its
+    // LED wall. src, tall and mode are the same as for {{> art}}: the picture the section shows
+    // instead when the 3D place cannot be shown (reduced motion, no WebGL, the model's two
+    // files missing from assets/3d/).
+    venue({ root }, args) {
+        const model = 'assets/3d/venue.json', store = 'assets/3d/venue.bin';
+        const picture = args.src ? artAttrs(root, args.src, args.mode, args.tall) : 'data-form="ring"';
+        if (!fs.existsSync(path.join(ROOT, model)) || !fs.existsSync(path.join(ROOT, store))) return picture;
+        // one version for both files: the page asks for the .bin with the .json's query
+        const v = crypto.createHash('sha1').update(fs.readFileSync(path.join(ROOT, model))).update(fs.readFileSync(path.join(ROOT, store))).digest('hex').slice(0, 8);
+        const pics = data.venuePics.map((src) => {
+            if (!media[src]) throw new Error(`venue: no thumbnail recorded for "${src}" (run npm run thumbs)`);
+            return root + url(media[src].src);
+        });
+        return `data-form="venue" data-venue="${root}${model}?v=${v}" data-venue-pics="${pics.join('|')}"${args.src ? ' ' + picture.replace('data-form="art" ', '') : ''}`;
     },
 
     // {{> art src=assets/images/x.jpg mode=backdrop}} inside a tag: that section shows the picture in 3D.
@@ -486,6 +513,7 @@ ${scene ? `<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/thr
 <script src="${root}js/gpgpu-starfield.js${ver('js/gpgpu-starfield.js')}" defer></script>
 <script src="${root}js/simple-bloom.js${ver('js/simple-bloom.js')}" defer></script>
 <script src="${root}js/artscene.js${ver('js/artscene.js')}" defer></script>
+<script src="${root}js/venue.js${ver('js/venue.js')}" defer></script>
 <script src="${root}js/main.js${ver('js/main.js')}" defer></script>
 ` : ''}<script src="${root}js/site.js${ver('js/site.js')}" defer></script>
 <script src="${root}js/analytics.js${ver('js/analytics.js')}" defer></script>

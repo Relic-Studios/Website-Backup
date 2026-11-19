@@ -91,7 +91,7 @@ function checkRef(where, fromDir, raw, kind) {
     }
 }
 
-const REF_ATTRS = ['href', 'src', 'poster', 'data-poster', 'data-video', 'data-photo', 'data-alt-src', 'data-src', 'data-full', 'data-art', 'data-art-full', 'data-depth', 'data-art-tall', 'data-art-tall-full', 'data-depth-tall'];
+const REF_ATTRS = ['href', 'src', 'poster', 'data-poster', 'data-video', 'data-photo', 'data-alt-src', 'data-src', 'data-full', 'data-art', 'data-art-full', 'data-depth', 'data-art-tall', 'data-art-tall-full', 'data-depth-tall', 'data-venue'];
 const count = (html, re) => (html.match(re) || []).length;
 
 const sitemapWanted = new Set();
@@ -116,6 +116,13 @@ for (const p of pages) {
     // 3 + 4. references
     for (const attr of REF_ATTRS) {
         for (const m of html.matchAll(new RegExp(`\\s${attr}="([^"]*)"`, 'g'))) checkRef(out, dir, m[1], attr);
+    }
+    for (const m of html.matchAll(/\sdata-venue-pics="([^"]*)"/g)) m[1].split('|').forEach((c) => checkRef(out, dir, c, 'data-venue-pics'));
+    for (const m of html.matchAll(/\sdata-venue="([^"]*)"/g)) {
+        // the 3D model: its second file must be published too, and it must be the real one
+        checkRef(out, dir, m[1].replace(/\.json(\?.*)?$/, '.bin'), 'data-venue (.bin)');
+        const file = path.join(ROOT, path.posix.join(dir, decodeURIComponent(m[1].split('?')[0])));
+        try { if (JSON.parse(fs.readFileSync(file, 'utf8')).standIn) fail(out, 'assets/3d/venue.json is the test stand-in, not the model built in Blender'); } catch (e) { /* reported above */ }
     }
     for (const m of html.matchAll(/\ssrcset="([^"]*)"/g)) m[1].split(',').forEach((c) => checkRef(out, dir, c.trim().split(/\s+/)[0], 'srcset'));
     for (const m of html.matchAll(/<meta (?:property|name)="(?:og:image|twitter:image|og:url)" content="([^"]+)"/g)) checkRef(out, dir, m[1], 'meta');

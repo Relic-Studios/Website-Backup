@@ -29,6 +29,11 @@
     const BURN_OUT = 0.4;    // seconds for it to burn away
     const PUSH_AFTER = 0.2;  // while the page is scrolling through a picture's section it burns in
     const BURN_PUSHED = 0.4; // sooner and faster than that, so a steady scroll still shows every picture
+    // A picture changed by hand (tap, swipe, arrow key): quicker, and sideways.
+    const SIDE_LEAD = 0.07;  // seconds the stars get before the new picture starts to arrive
+    const SIDE_IN = 0.62;    // seconds it takes to arrive
+    const SIDE_OUT = 0.5;    // seconds the old one takes to leave
+    const PULL = 0.55;       // how far a drag moves the picture, as a share of the window width per unit of pull
 
     function loadImage(src) {
         return new Promise((resolve, reject) => {
@@ -138,8 +143,11 @@
 
     const SHEET_FRAGMENT = `
         uniform sampler2D uMap;
+        uniform sampler2D uDepth;
         uniform sampler2D uTrail;
         uniform vec2 uRes;
+        uniform vec2 uLight;
+        uniform float uLightOn;
         uniform float uReveal;
         uniform float uSeed;
         uniform float uAspect;
@@ -168,7 +176,23 @@
             float alpha = smoothstep(0.0, 0.14, edge);
             // a thin hot line where the picture is arriving or leaving
             float burn = smoothstep(0.0, 0.012, edge) * (1.0 - smoothstep(0.012, 0.07, edge));
-            vec3 col = c.rgb + GLOW * burn * 0.7;
+            vec3 col = c.rgb;
+
+            // The pointer is a light held just above the picture. The depth map gives every part
+            // of the picture a slope: slopes that face the light brighten, slopes that face away
+            // darken, and there is a soft sheen right under it. Flat parts keep their own colour.
+            float e = 0.006;
+            float sx = texture2D(uDepth, vUv + vec2(e / uAspect, 0.0)).r - texture2D(uDepth, vUv - vec2(e / uAspect, 0.0)).r;
+            float sy = texture2D(uDepth, vUv + vec2(0.0, e)).r - texture2D(uDepth, vUv - vec2(0.0, e)).r;
+            vec3 nrm = normalize(vec3(-sx * 9.0, -sy * 9.0, 1.0));
+            vec2 toLight = (uLight - gl_FragCoord.xy / uRes) * vec2(uRes.x / uRes.y, 1.0);
+            vec3 L = normalize(vec3(toLight, 0.3));
+            float near = exp(-dot(toLight, toLight) / 0.2);
+            float facing = max(dot(nrm, L) - L.z, -0.3);
+            float sheen = pow(max(dot(nrm, normalize(L + vec3(0.0, 0.0, 1.0))), 0.0), 36.0);
+            col *= 1.0 + uLightOn * (facing * (0.45 + 0.75 * near) + (near - 0.42) * 0.2);
+            col += vec3(1.0, 0.97, 0.92) * sheen * uLightOn * 0.14 * (0.35 + lum);
+            col = max(col, 0.0) + GLOW * burn * 0.7;
 
             // Where the pointer has just passed, the sheet comes apart into a lattice of light
             // points, each one the colour of the picture under it and larger where it is bright.
@@ -203,6 +227,8 @@
                 uDepth: { value: null },
                 uTrail: { value: still },
                 uRes: { value: new THREE.Vector2(1, 1) },
+                uLight: { value: new THREE.Vector2(0.5, 0.5) },
+                uLightOn: { value: 0 },
                 uSize: { value: new THREE.Vector2(1, 1) },
                 uOffsetY: { value: 0 },
                 uDepthScale: { value: 1 },
@@ -219,7 +245,11 @@
         const mesh = new THREE.Mesh(geometry, material);
         mesh.frustumCulled = false;
         mesh.visible = false;
-        return { material, mesh, asset: null, mode: 'frame', id: null, reveal: 0 };
+        // dir: which way the page was scrolling when this sheet set off (1 down, -1 up)
+        // side: 0 when the scroll brought this sheet; 1 or -1 when the visitor changed pictures
+        //       by hand: the side of the window it comes from, or leaves to
+        // pull: how far a drag is holding it off to one side (-0.6 to 0.6 of the window width)
+        return { material, mesh, asset: null, mode: 'frame', id: null, reveal: 0, dir: 1, side: 0, pull: 0 };
     }
 
     class ArtStage {
@@ -233,6 +263,14 @@
             this.front = null;     // the sheet that holds, or last held, the wanted picture
             this.t = 0;            // seconds since the stars were sent to the wanted picture
             this.shift = 0;        // how far main.js should slide the view sideways for this picture
+            this.dir = 1;          // which way the page is scrolling (1 down, -1 up), set by main.js
+            this.light = new THREE.Vector2(0.5, 0.5); // where the light is, 0..1 across and up the window
+            this.lightOn = 0;      // 0 to 1, both set by main.js
+            this.visH = 1;         // height of the view in world units at the layout distance
+            this.visW = 1;         // and its width
+            this.pullTo = 0;       // where a drag wants the front picture (see sheet.pull), set by main.js
+            this.lead = DOTS_FIRST; // seconds the stars get before the wanted picture starts to arrive
+            this.burnIn = BURN_IN;  // seconds it then takes
             this.view = { w: window.innerWidth, h: window.innerHeight };
             this.webgl2 = !!renderer.capabilities.isWebGL2;
             this.onError = null;   // called if a picture cannot be loaded
@@ -286,8 +324,8 @@
         // `px` is its height on screen in CSS pixels.
         boxFor(asset, mode) {
             const va = this.view.w / this.view.h;
-            const visH = 2 * DIST * Math.tan(THREE.MathUtils.degToRad(this.camera.fov / 2));
-            const visW = visH * va;
+            const visH = this.visH = 2 * DIST * Math.tan(THREE.MathUtils.degToRad(this.camera.fov / 2));
+            const visW = this.visW = visH * va;
             const px = (h) => (h / visH) * this.view.h;
             if (mode === 'backdrop') { // fills the window, with a margin so camera moves never show its edge
                 const h = Math.max(visH, visW / asset.aspect) * 1.2, w = h * asset.aspect;
@@ -353,16 +391,22 @@
             this.sheets.forEach((s) => { s.mesh.renderOrder = s === sheet ? 2 : 1; });
         }
 
-        show(piece) {
+        // side (optional): 1 when the visitor went on to this picture by hand, -1 when they went
+        // back. The picture in front then leaves to one side and this one arrives from the other.
+        show(piece, side) {
             const mode = piece.mode === 'backdrop' ? 'backdrop' : 'frame';
             const id = piece.src + '|' + mode;
             if (this.wanted === id) return;
+            side = mode === 'frame' && (side === 1 || side === -1) ? side : 0;
             this.wanted = id; // from now on any other picture burns away
+            this.lead = side ? SIDE_LEAD : DOTS_FIRST;
+            this.burnIn = side ? SIDE_IN : BURN_IN;
             const held = this.sheets.find((s) => s.asset && s.id === id);
+            this.leave(held, side);
             if (held) {
                 // Coming back to a picture that has not finished burning away.
                 this.bring(held);
-                this.t = DOTS_FIRST * 0.6;
+                this.t = this.lead * 0.6;
                 this.sendStars(held.asset, mode);
                 return;
             }
@@ -371,13 +415,67 @@
                 // Use the emptier sheet; the other one carries on burning away underneath.
                 const sheet = this.sheets[0].reveal <= this.sheets[1].reveal ? this.sheets[0] : this.sheets[1];
                 this.put(sheet, asset, mode, id);
+                sheet.dir = this.dir;
+                sheet.side = side;
+                sheet.pull = 0;
                 this.bring(sheet);
                 this.t = 0;
                 this.sendStars(asset, mode); // the stars set off at once
             }).catch(() => { if (this.onError) this.onError(piece); });
         }
 
-        hide() { this.wanted = null; }
+        hide() {
+            if (this.wanted) this.leave(null);
+            this.wanted = null;
+        }
+
+        // The picture in front is no longer wanted (unless it is `keep`): it carries on in the
+        // direction of the scroll instead of going back the way it came. A sheet that had not
+        // settled yet simply retreats, so nothing jumps.
+        // Changed by hand (`side`), it leaves to the side opposite the one the next comes from.
+        leave(keep, side) {
+            const f = this.front;
+            if (!f || f === keep || !f.asset || f.reveal <= 0.9) return;
+            if (side && f.mode === 'frame') f.side = -side;
+            else { f.side = 0; f.dir = -this.dir; }
+        }
+
+        // Where a sheet is in space for how far it has arrived. Pictures do not just fade: a framed
+        // one swings up into place from deeper in the scene, and a backdrop starts as a tilted
+        // panel in the distance and grows until it fills the window.
+        pose(s) {
+            const r = s.reveal, e = r * r * (3 - 2 * r), k = 1 - e;
+            const m = s.mesh;
+            if (s.mode === 'backdrop') {
+                m.scale.setScalar(0.44 + 0.56 * e);
+                m.rotation.set(0.16 * k, -0.52 * k, 0.1 * k);
+                m.position.set(0, -0.05 * this.visH * k, 0);
+            } else if (s.side) {
+                // Changed by hand: it swings off to one side like a turning panel, face toward
+                // the middle, and the next one swings in from the other side.
+                // Where the picture sits beside a caption (wide windows), the caption's side
+                // has little room: there it mostly falls back into the scene instead of across.
+                const tight = this.shift > 0.05 && s.side < 0;
+                m.scale.setScalar(1 - 0.14 * k);
+                m.rotation.set(0, -1.05 * s.side * k, 0.06 * s.side * k);
+                m.position.set(s.side * this.visW * (tight ? 0.3 : 0.58) * k, 0, (tight ? -280 : -90) * k);
+            } else {
+                m.scale.setScalar(0.9 + 0.1 * e);
+                m.rotation.set(-0.34 * s.dir * k, 0.3 * k, 0);
+                m.position.set(0, -0.2 * this.visH * s.dir * k, -150 * k);
+            }
+            if (s.mode !== 'backdrop' && s.pull) {
+                // A finger dragging it sideways: it follows and starts to turn the same way.
+                m.position.x += s.pull * this.visW * PULL;
+                m.rotation.y -= s.pull * 0.9;
+            }
+        }
+
+        // How far the front picture is being held off to one side, in world units (the stars follow).
+        get offsetX() {
+            const f = this.front;
+            return f && f.asset && f.mode === 'frame' && this.wanted === f.id ? f.pull * this.visW * PULL : 0;
+        }
 
         // Fetch a picture ahead of time so the next section does not wait for it.
         preload(piece) { this.load(piece).catch(() => {}); }
@@ -393,17 +491,23 @@
                 if (!s.asset) continue;
                 if (s === this.front && this.wanted === s.id) {
                     let r = s.reveal;
-                    if (this.t > DOTS_FIRST) r = Math.min(1, r + dt / BURN_IN);
+                    if (this.t > this.lead) r = Math.min(1, r + dt / this.burnIn);
                     if (push > r && this.t > PUSH_AFTER) r = Math.max(r, Math.min(push, s.reveal + dt / BURN_PUSHED));
                     s.reveal = r;
+                    s.pull += (this.pullTo - s.pull) * Math.min(1, dt * 16);
+                    if (Math.abs(s.pull) < 0.0005 && !this.pullTo) s.pull = 0;
                 } else {
-                    s.reveal = Math.max(0, s.reveal - dt / BURN_OUT);
-                    if (s.reveal === 0) { s.asset = null; s.id = null; }
+                    // A sheet that is leaving keeps the pull it had: it carries on from where the finger left it.
+                    s.reveal = Math.max(0, s.reveal - dt / (s.side ? SIDE_OUT : BURN_OUT));
+                    if (s.reveal === 0) { s.asset = null; s.id = null; s.side = 0; s.pull = 0; }
                 }
                 const r = s.reveal;
-                s.material.uniforms.uReveal.value = r;
+                // The picture is fully burned in a little before it has settled, so it lands whole.
+                // (One moving sideways is only seen on the nearer part of its way.)
+                s.material.uniforms.uReveal.value = s.side ? Math.max(0, Math.min(1, (r - 0.2) / 0.45)) : Math.min(1, r / 0.62);
                 s.material.uniforms.uRelief.value = r * r * (3 - 2 * r);
                 s.mesh.visible = !!s.asset && r > 0.001;
+                if (s.mesh.visible) this.pose(s);
             }
         }
 
@@ -415,6 +519,8 @@
             for (const s of this.sheets) {
                 const u = s.material.uniforms;
                 u.uTrail.value = trail || this.still;
+                u.uLight.value.copy(this.light);
+                u.uLightOn.value = this.lightOn;
                 if (target) u.uRes.value.set(target.width, target.height); else r.getDrawingBufferSize(u.uRes.value);
             }
             const auto = r.autoClear;

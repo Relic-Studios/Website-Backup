@@ -42,6 +42,9 @@ js/main.js          the 3D background: which shape or picture is showing, and th
 js/gpgpu-starfield.js   the star simulation
 js/artscene.js      pictures as 3D scenes: the sheet with relief, and where each star goes
 js/simple-bloom.js  how a frame is put together: star glow, the picture, pointer ripple, scroll stretch
+js/venue.js         the truss cathedral: the 3D place the home page ends in
+assets/3d/          its model (venue.json + venue.bin), made in Blender
+tools/venue/        the scripts that make that model (see the README there)
 tools/make-depth.py depth maps for the pictures shown as 3D scenes (assets/images/depth/)
 js/analytics.js     analytics
 assets/             images, videos, headshots
@@ -76,10 +79,30 @@ To add a project page: copy one of `_src/pages/projects-*.html`, add its row to 
   it as coloured points, the picture burns in over them as a sheet with real relief, and it turns
   with the pointer and the scroll. Standing still, a picture takes about a second and a half to
   form; scrolling into its section brings it in faster, so a steady scroll still shows each one.
-  Where it is used: the showcase at the top of the home page gallery (pictures listed in
-  `showcase` in `_src/data.cjs`), and a full-window scene behind the closing block of the home,
+  Where it is used: the viewer at the top of the home page gallery (pictures listed in
+  `showcase` in `_src/data.cjs`), and a full-window scene behind the closing block of the
   About, Get Involved and Aidan Poole pages. Project pages have none (they stay text only). How to
   add one is in `_src/README.md`.
+- **Gallery viewer (home page).** One picture at a time. The visitor changes it by clicking or
+  tapping the left or right side of the picture, swiping, the arrow keys or the rail under it;
+  until they first do, the pictures change by themselves. A change by hand sweeps sideways: the
+  old picture swings off like a turning panel and the stars gust and regroup. Scrolling only
+  moves down the page.
+- **The truss cathedral (home page, closing block).** The home page ends in a place built in 3D:
+  a nave of pointed arches made of stage truss, with a tall LED wall that plays the studio's
+  pictures (`venuePics` in `_src/data.cjs`). It belongs to the "Let's create something Epic"
+  block: it rises into the window with that block, its pieces fly in from the sides and lock
+  together, the wall stands right above the words, and it goes up and out with them when the
+  footer comes. A click on the scene puts the next picture on the wall. It must look like part of
+  the page: dark metal on black, stars along the truss, the picture on the wall the only colour.
+  Visitors with reduced motion or without WebGL get the ordinary block instead.
+- **Calm at the top.** The stars keep one shape (the open cloud) from the top of the home page
+  down to the gallery. Shape changes are for the lower sections. The owner found more than that
+  "too crowded".
+- **The studio's artwork is 3D work, never AI.** It is made in Cinema 4D and rendered in Octane.
+  No caption or description calls a piece AI-generated, AI-assisted or generative.
+- **Contact buttons.** The buttons that lead to a form show blinking cyan arrows on hover
+  (`.nudge` in `css/relic.css`).
 - **Pointer and scroll.** Moving the pointer fast across a picture breaks it into a lattice of
   light points that closes again; a click or tap sends a ring through it; fast scrolling bows and
   smears the whole background. Stars swerve away from the pointer while it moves.

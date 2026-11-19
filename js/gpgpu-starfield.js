@@ -110,6 +110,12 @@ class GPGPUStarfield {
         this.velocityVariable.material.uniforms.uMouseSpeed = { value: 0.0 };
         this.velocityVariable.material.uniforms.uStiff = { value: this.stiff };
         this.velocityVariable.material.uniforms.uDamp = { value: this.damp };
+        this.gustNow = new THREE.Vector3();   // a shove given to every star, fading (see gust())
+        this.offset = new THREE.Vector3();    // held stars sit this far from their places (see setOffset())
+        this.level = 1;                       // how bright the stars are drawn, eased toward levelTo (see setLevel())
+        this.levelTo = 1;
+        this.velocityVariable.material.uniforms.uGust = { value: this.gustNow };
+        this.velocityVariable.material.uniforms.uOffset = { value: this.offset };
 
         // Formations: each star has a target position in texture A and B; uMix blends them.
         // The alpha channel says how free the star is (1 = drifts as before, 0 = holds its place).
@@ -175,6 +181,8 @@ class GPGPUStarfield {
             uniform float uMouseSpeed;
             uniform float uStiff;
             uniform float uDamp;
+            uniform vec3 uGust;
+            uniform vec3 uOffset;
             uniform sampler2D uTargetA;
             uniform sampler2D uTargetB;
             uniform float uMix;
@@ -322,8 +330,13 @@ class GPGPUStarfield {
                 // Gentle attraction toward center for cohesion
                 vel += toCenter * 0.003 * smoothstep(350.0, 100.0, distFromCenter) * freeAmt;
 
-                // Spring toward the formation target
-                vel += (target - pos) * uStiff * held;
+                // Spring toward the formation target (moved aside while a picture is being dragged)
+                vel += (target + uOffset - pos) * uStiff * held;
+
+                // A gust: every star is shoved the same way, each by its own amount, so a
+                // picture streaks sideways before the stars find their new places.
+                float mine = fract(sin(dot(uv, vec2(12.9898, 78.233))) * 43758.5453);
+                vel += uGust * (0.2 + 0.8 * mine * mine) * mix(0.3, 1.0, held);
 
                 // Pointer: stars are pushed away from the line of sight through the cursor,
                 // harder while the cursor is moving, so it leaves a wake in the field.
@@ -479,15 +492,36 @@ class GPGPUStarfield {
         u.uTargetB.value = this.formations[this.formB];
         u.uMix.value = 0;
         const art = name === 'art0' || name === 'art1';
-        this.stiffTo = art ? 0.03 : 0.0075;
-        this.dampTo = art ? 0.885 : 0.94;
-        this.mixSpeed = art ? 0.03 : 0.012;
+        const pace = this.paces && this.paces[name]; // a formation added from outside may bring its own
+        this.stiffTo = pace ? pace.stiff : art ? 0.03 : 0.0075;
+        this.dampTo = pace ? pace.damp : art ? 0.885 : 0.94;
+        this.mixSpeed = pace ? pace.mixSpeed : art ? 0.03 : 0.012;
         if (this.particles) {
             const pu = this.particles.material.uniforms;
             pu.uColorA.value = this.colors[this.formA] || this.white;
             pu.uColorB.value = this.colors[this.formB] || this.white;
             pu.uColorMix.value = 0;
         }
+    }
+
+    // Add a formation from outside. place(i) gives star i its spot as [x, y, z], or nothing to
+    // leave that star drifting. pace (optional): { stiff, damp, mixSpeed }, how briskly the stars
+    // take the shape (see setFormation for the usual values).
+    addFormation(name, place, pace) {
+        if (!this.formations) return;
+        const size = this.textureSize, count = size * size, home = this.homePositions;
+        const data = new Float32Array(count * 4);
+        for (let i = 0; i < count; i++) {
+            const o = i * 4, p = place(i);
+            if (p) { data[o] = p[0]; data[o + 1] = p[1]; data[o + 2] = p[2]; data[o + 3] = 0; }
+            else { data[o] = home[o]; data[o + 1] = home[o + 1]; data[o + 2] = home[o + 2]; data[o + 3] = 1; }
+        }
+        const tex = new THREE.DataTexture(data, size, size, THREE.RGBAFormat, THREE.FloatType);
+        tex.minFilter = THREE.NearestFilter;
+        tex.magFilter = THREE.NearestFilter;
+        tex.needsUpdate = true;
+        this.formations[name] = tex;
+        if (pace) { this.paces = this.paces || {}; this.paces[name] = pace; }
     }
 
     // Gather the stars into a picture.
@@ -548,7 +582,8 @@ class GPGPUStarfield {
                 uColorA: { value: this.white },
                 uColorB: { value: this.white },
                 uColorMix: { value: 1 },
-                uPixelRatio: { value: Math.min(window.devicePixelRatio || 1, 2) }
+                uPixelRatio: { value: Math.min(window.devicePixelRatio || 1, 2) },
+                uLevel: { value: 1 }
             },
             vertexShader: `
                 uniform sampler2D uPositions;
@@ -599,6 +634,7 @@ class GPGPUStarfield {
                 }
             `,
             fragmentShader: `
+                uniform float uLevel;
                 varying float vSpeed;
                 varying float vDepth;
                 varying vec4 vTint;
@@ -623,7 +659,7 @@ class GPGPUStarfield {
                     // White in the field; the picture's own colour when the star is part of one
                     vec3 color = mix(vec3(1.0), vTint.rgb * 1.5, vTint.a);
                     vec3 finalColor = color * (1.0 + bloom * 1.2 + speedGlow);
-                    alpha *= mix(1.0, 1.35, vTint.a);
+                    alpha *= mix(1.0, 1.35, vTint.a) * uLevel;
 
                     gl_FragColor = vec4(finalColor, alpha);
                 }
@@ -653,6 +689,15 @@ class GPGPUStarfield {
 
     pointerLeft() { this.pointerOn = 0; }
 
+    // Shove every star sideways for a moment: x is -1 (to the left) to 1 (to the right).
+    gust(x) { this.gustNow.set(x * 15, 0, 0); }
+
+    // How bright the stars are drawn: 1 as usual, less when they are only dust in a 3D place.
+    setLevel(v) { this.levelTo = v; }
+
+    // Hold the stars of a picture this far to one side of their places (world units).
+    setOffset(x) { this.offset.x = x; }
+
     update(time) {
         if (!this.gpuCompute || !this.particles) return;
         // Update GPGPU uniforms
@@ -663,6 +708,7 @@ class GPGPUStarfield {
 
         // Decay mouse speed
         this.mouseSpeed *= 0.9;
+        if (this.gustNow.x) this.gustNow.x = Math.abs(this.gustNow.x) < 0.05 ? 0 : this.gustNow.x * 0.8;
 
         // Ease the pull strength toward what the current formation asks for
         if (this.stiffTo !== undefined) {
@@ -690,6 +736,8 @@ class GPGPUStarfield {
         this.particles.material.uniforms.uVelocities.value =
             this.gpuCompute.getCurrentRenderTarget(this.velocityVariable).texture;
         this.particles.material.uniforms.uTime.value = time;
+        this.level += (this.levelTo - this.level) * 0.05;
+        this.particles.material.uniforms.uLevel.value = this.level;
         this.particles.material.uniforms.uCameraPosition.value = this.camera.position;
     }
 

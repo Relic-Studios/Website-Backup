@@ -122,19 +122,20 @@
             if (nav) nav.classList.toggle('is-scrolled', y > 24);
             if (pctEl) pctEl.textContent = String(Math.round(p * 100)).padStart(3, '0');
             updateSection();
-            let d;
-            if (artOn === 'frame') d = 0.02;          // a picture is on stage: nothing dims it
-            else if (artOn === 'backdrop') d = 0.42;  // a picture fills the window behind text: keep the text readable
-            else if (isHome) d = 0.10 + 0.34 * clamp(y / (window.innerHeight * 0.85), 0, 1); // the starfield is the hero; it steps back once reading starts
-            else d = 0.26 + 0.2 * clamp(y / (window.innerHeight * 0.6), 0, 1);               // inner pages: the formation shows through the page title, then steps back
-            root.style.setProperty('--dim', d.toFixed(3));
-            updateLitText();
             // How far the middle of the window has travelled through the current section (0 to 1).
             let section = 0.5;
             if (currentSection) {
                 const r = currentSection.getBoundingClientRect();
                 section = clamp((window.innerHeight * 0.5 - r.top) / Math.max(1, r.height), 0, 1);
             }
+            let d;
+            if (artOn === 'frame') d = 0.02;          // a picture is on stage: nothing dims it
+            else if (artOn === 'backdrop') d = 0.42;  // a picture fills the window behind text: keep the text readable
+            else if (currentSection && currentSection.dataset.form === 'venue' && root.classList.contains('has-venue')) d = 0.04; // the 3D place is the picture
+            else if (isHome) d = 0.10 + 0.34 * clamp(y / (window.innerHeight * 0.85), 0, 1); // the starfield is the hero; it steps back once reading starts
+            else d = 0.26 + 0.2 * clamp(y / (window.innerHeight * 0.6), 0, 1);               // inner pages: the formation shows through the page title, then steps back
+            root.style.setProperty('--dim', d.toFixed(3));
+            updateLitText();
             doc.dispatchEvent(new CustomEvent('relic:scroll', { detail: { progress: p, y, section } }));
         });
     }
@@ -214,18 +215,152 @@
         const label = $('[data-hud-section]');
         if (label && best.dataset.section) label.textContent = best.dataset.section;
         const form = best.dataset.form || doc.body.dataset.form || 'cloud';
-        const art = form === 'art' ? artOf(best) : null;
-        artOn = art && root.classList.contains('has-art') ? art.mode : '';
+        // A section in the 3D place (form "venue") also names a picture, shown when the place cannot be.
+        const place = form === 'venue' && root.classList.contains('has-venue');
+        const art = form === 'art' || form === 'venue' ? artOf(best) : null;
+        artOn = !place && art && root.classList.contains('has-art') ? art.mode : '';
         root.classList.toggle('art-on', artOn === 'frame');
 
-        // A step of a showcase brings up its own caption (and its plain image where there is no 3D).
-        if (best.dataset.show !== undefined) {
-            const box = best.closest('.showcase');
-            const n = Number(best.dataset.show);
-            $$('.show', box).forEach((el, i) => el.classList.toggle('is-active', i === n));
-            $$('.showcase__rail li', box).forEach((el, i) => el.classList.toggle('is-active', i === n));
-        }
         doc.dispatchEvent(new CustomEvent('relic:form', { detail: { form, art } }));
+    }
+
+    /* ---------- showcase: one picture at a time ----------
+       The visitor changes the picture by tapping or clicking the left or right side of it,
+       swiping sideways, the arrow keys or the rail. Scrolling only moves down the page. Until
+       the visitor changes a picture, the pictures change by themselves.
+       The showcase is one section: its data-art attributes always name the current picture
+       (copied from the hidden .showcase__step of that picture), so updateSection() needs no
+       special case. A change made here is sent with `side` (1 = on to the next, -1 = back),
+       which js/main.js turns into a sideways move instead of the usual burn. */
+    function initShowcase() {
+        const box = $('.showcase');
+        if (!box) return;
+        const pin = $('.showcase__pin', box);
+        const figs = $$('.show', box);
+        const steps = $$('.showcase__step', box);
+        const dots = $$('.showcase__rail button', box);
+        const n = figs.length;
+        if (n < 2 || steps.length !== n) return;
+        const HOLD = 6500;       // ms a picture stays before the next comes by itself
+        let index = 0;
+        let auto = !reduced;     // off for good once the visitor changes a picture
+        let due = 0;             // when the next automatic change happens
+        let since = 0;           // when the current wait began
+        let swipedAt = 0;        // a swipe ends in a click on whatever is under it: ignored
+
+        // Where the current picture is on screen, for the two buttons that cover its halves.
+        const measure = () => {
+            const fig = figs[index], img = $('.show__img', fig), cs = getComputedStyle(fig);
+            const v = (name) => (parseFloat(cs.getPropertyValue(name)) || 0) / 100;
+            const W = pin.clientWidth, H = pin.clientHeight;
+            const bw = v('--bw') * W, bh = v('--bh') * H;
+            const aspect = (Number(img.getAttribute('width')) / Number(img.getAttribute('height'))) || 1;
+            const w = Math.min(bw, bh * aspect), h = w / aspect;
+            pin.style.setProperty('--px', (v('--bx') * W + (bw - w) / 2).toFixed(1) + 'px');
+            pin.style.setProperty('--py', (v('--by') * H + (bh - h) / 2).toFixed(1) + 'px');
+            pin.style.setProperty('--pw', w.toFixed(1) + 'px');
+            pin.style.setProperty('--ph', h.toFixed(1) + 'px');
+        };
+        const wait = (ms) => { since = performance.now(); due = since + ms; };
+        const fetchAhead = (i) => {
+            if (!root.classList.contains('has-art')) return;
+            const piece = artOf(steps[((i % n) + n) % n]);
+            if (piece) doc.dispatchEvent(new CustomEvent('relic:art', { detail: { preload: [piece] } }));
+        };
+        const pull = (f) => {
+            pin.style.setProperty('--pull', f.toFixed(3));
+            doc.dispatchEvent(new CustomEvent('relic:pull', { detail: { pull: f } }));
+        };
+
+        const go = (to, side, byHand) => {
+            to = ((to % n) + n) % n;
+            if (byHand && auto) { auto = false; box.classList.add('is-used'); box.style.setProperty('--t', '1'); }
+            if (to === index) return;
+            const from = figs[index], next = figs[to];
+            pin.style.setProperty('--dir', side);
+            next.classList.add('is-coming');
+            void next.offsetWidth; // the new caption starts on the far side, then comes in
+            from.classList.remove('is-active');
+            next.classList.remove('is-coming');
+            next.classList.add('is-active');
+            dots.forEach((d, i) => {
+                d.classList.toggle('is-active', i === to);
+                if (i === to) d.setAttribute('aria-current', 'true'); else d.removeAttribute('aria-current');
+            });
+            index = to;
+            ['art', 'artFull', 'depth'].forEach((k) => {
+                if (steps[to].dataset[k]) box.dataset[k] = steps[to].dataset[k]; else delete box.dataset[k];
+            });
+            measure();
+            wait(HOLD);
+            if (auto) box.style.setProperty('--t', '0');
+            if (currentSection === box && root.classList.contains('has-art')) {
+                doc.dispatchEvent(new CustomEvent('relic:form', { detail: { form: 'art', art: artOf(box), side } }));
+            }
+            fetchAhead(to + side);
+        };
+
+        $('.showcase__go--prev', box).addEventListener('click', () => { if (performance.now() - swipedAt > 400) go(index - 1, -1, true); });
+        $('.showcase__go--next', box).addEventListener('click', () => { if (performance.now() - swipedAt > 400) go(index + 1, 1, true); });
+        dots.forEach((d, i) => d.addEventListener('click', () => go(i, i > index ? 1 : -1, true)));
+
+        doc.addEventListener('keydown', (e) => {
+            if ((e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') || e.altKey || e.ctrlKey || e.metaKey) return;
+            if (e.target.closest && e.target.closest('input, textarea, select, [contenteditable], dialog')) return;
+            if (currentSection !== box && !box.contains(doc.activeElement)) return;
+            const side = e.key === 'ArrowRight' ? 1 : -1;
+            go(index + side, side, true);
+        });
+
+        // Swipe: the picture follows the finger (or a mouse drag); let go far enough or fast
+        // enough and it carries on to the next one, otherwise it springs back.
+        let down = null;
+        pin.addEventListener('pointerdown', (e) => {
+            if (e.pointerType === 'mouse' && e.button !== 0) return;
+            down = { id: e.pointerId, x: e.clientX, y: e.clientY, t: performance.now(), dx: 0, swiping: false };
+        });
+        pin.addEventListener('pointermove', (e) => {
+            if (!down || e.pointerId !== down.id) return;
+            const dx = e.clientX - down.x, dy = e.clientY - down.y;
+            if (!down.swiping) {
+                if (Math.abs(dx) < 10 || Math.abs(dx) < Math.abs(dy) * 1.2) return;
+                down.swiping = true;
+                try { pin.setPointerCapture(e.pointerId); } catch (err) { /* older browsers */ }
+            }
+            down.dx = dx;
+            wait(HOLD);
+            pull(clamp(dx / pin.clientWidth, -0.6, 0.6));
+        });
+        const up = (e, cancelled) => {
+            if (!down || e.pointerId !== down.id) return;
+            const d = down;
+            down = null;
+            if (!d.swiping) return;
+            swipedAt = performance.now();
+            const fast = Math.abs(d.dx) / Math.max(1, swipedAt - d.t) > 0.45; // px per ms
+            const far = Math.abs(d.dx) > pin.clientWidth * 0.14;
+            if (!cancelled && (far || (fast && Math.abs(d.dx) > 24))) go(index + (d.dx < 0 ? 1 : -1), d.dx < 0 ? 1 : -1, true);
+            pull(0);
+        };
+        pin.addEventListener('pointerup', (e) => up(e, false));
+        pin.addEventListener('pointercancel', (e) => up(e, true));
+        // A visitor playing with the picture is not interrupted by the next one.
+        pin.addEventListener('pointermove', () => { if (auto && due - performance.now() < 3000) due = performance.now() + 3000; }, { passive: true });
+
+        measure();
+        window.addEventListener('resize', measure);
+        fetchAhead(1);
+
+        if (!auto) { box.style.setProperty('--t', '1'); return; }
+        box.style.setProperty('--t', '0');
+        wait(HOLD);
+        setInterval(() => {
+            if (!auto) return;
+            const now = performance.now();
+            if (currentSection !== box || doc.hidden || down) { wait(HOLD); box.style.setProperty('--t', '0'); return; }
+            if (now >= due) { go(index + 1, 1, false); return; }
+            box.style.setProperty('--t', clamp((now - since) / Math.max(1, due - since), 0, 1).toFixed(3));
+        }, 250);
     }
 
     /* Lists lean with the scroll: a small skew that follows how fast the page is moving. */
@@ -545,12 +680,40 @@
         });
     }
 
+    /* Arrows around the contact button (and the e-mail address) that blink in turn while the
+       pointer is on it. They go on the sides that are free, and above and below. */
+    function initNudge() {
+        const arrow = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M4 12h15M13 6l6 6-6 6"/></svg>';
+        $$('.cta .btn--solid, .cta__mail a').forEach((el) => {
+            let sides;
+            if (el.classList.contains('btn')) {
+                const left = !el.previousElementSibling, right = !el.nextElementSibling;
+                sides = left && right ? ['l', 'r', 'b'] : left ? ['l', 'b', 't'] : right ? ['r', 'b', 't'] : ['t', 'b'];
+            } else {
+                sides = ['r', 'b'];
+            }
+            const wrap = doc.createElement('span');
+            wrap.className = 'nudge' + (sides.length === 2 ? ' nudge--2' : '');
+            el.parentNode.insertBefore(wrap, el);
+            wrap.appendChild(el);
+            sides.forEach((side, i) => {
+                const a = doc.createElement('span');
+                a.className = 'nudge__a nudge__a--' + side;
+                a.style.setProperty('--i', i);
+                a.setAttribute('aria-hidden', 'true');
+                a.innerHTML = arrow;
+                wrap.appendChild(a);
+            });
+        });
+    }
+
     /* ---------- boot ---------- */
     function boot() {
         initLitText();
         initReveal();
         initMenu();
         initSections();
+        initShowcase();
         initScrollLean();
         initTimecode();
         initPointer();
@@ -560,6 +723,7 @@
         initVideoFacades();
         initScramble();
         initMotionToggle();
+        initNudge();
         window.addEventListener('scroll', onScroll, { passive: true });
         window.addEventListener('resize', onScroll, { passive: true });
         onScroll();

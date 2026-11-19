@@ -31,8 +31,9 @@ shared blocks written as `{{> name key=value}}`:
 | `worklist [group=credits\|software]` | the numbered work list |
 | `ticker` | scrolling strip of project names |
 | `gallery` | gallery grid with filters |
-| `showcase` | pinned strip of pictures shown as 3D scenes (the list is `showcase` in `data.cjs`) |
+| `showcase` | the gallery viewer: one picture at a time shown as a 3D scene; the visitor changes it (the list is `showcase` in `data.cjs`) |
 | `art src=assets/images/x.jpg [mode=backdrop] [tall=assets/images/y.jpg]` | written inside a section's opening tag: that section shows the picture as a 3D scene |
+| `venue src=assets/images/x.jpg [mode=backdrop] [tall=assets/images/y.jpg]` | written inside a section's opening tag: that section stands in the truss cathedral (see below); `src`, `mode` and `tall` name the picture shown where the 3D place cannot be |
 | `services_teaser`, `services_full` | service cards |
 | `achievements` | achievement cards (About) |
 | `practice_articles` | the same achievement texts written out in full (Work index) |
@@ -66,6 +67,25 @@ To add a picture:
 4. `npm run check`.
 
 Visitors with reduced motion, or without WebGL, see the same pictures as plain images.
+
+### The truss cathedral
+
+`{{> venue ...}}` in a section's opening tag puts that section in the 3D place drawn by
+`js/venue.js` (model: `assets/3d/venue.json` and `venue.bin`). It is used once, on the closing
+block of the home page:
+
+```html
+<section class="sec sec--line cta cta--venue" id="contact" data-section="Contact" {{> venue src=assets/images/pretty.jpg tall="assets/images/thelostgirl4 (00000).jpg" mode=backdrop}}>
+```
+
+- The pictures on its LED wall are `venuePics` in `data.cjs` (upright pictures suit the wall;
+  each needs its web-size copy, as above).
+- The class `cta--venue` makes the block one window high with its words at the foot, so the wall
+  has the upper half. The camera measures where the words (`.wrap`) begin and stands so that the
+  whole wall fits between the menu bar and the words, on any screen.
+- The model is made with the scripts in `tools/venue/`. `npm run check` fails if the model's
+  `.bin` file or one of the wall's pictures is missing, or if the model is the test stand-in.
+- If the model's two files are missing the block is built as an ordinary `{{> art}}` section.
 
 Headings: one word may be wrapped as `<span class="goth" data-keep>Word</span>` to set it in chrome
 blackletter. One per heading at most. A name counts as one word and is never split: when the

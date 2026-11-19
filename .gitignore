@@ -49,3 +49,28 @@ test-screenshots/
 
 # EGM design and review working files (never publish: the repo root is the live site)
 work/
+
+# Notes for assistants working in this folder (local only: the repo root is the live site)
+/CLAUDE.md
+
+# Files from an assistant session that began outside this folder (a profile kit, fetched pages,
+# clones of other repositories). Not part of the site.
+/.playwright-mcp/
+/atlas-voice-byline/
+/brief/
+/engram-author-link/
+/fetched/
+/kit/
+/scripts/
+
+# The cathedral model: what its scripts write next to themselves
+/tools/venue/*.blend
+/tools/venue/*.blend1
+/tools/venue/*.npz
+/tools/venue/*.png
+/tools/venue/*.log
+/tools/venue/venue_meta.json
+__pycache__/
+
+# Local preview config (absolute path to this computer)
+/.claude/launch.json

@@ -20,7 +20,8 @@ class SimpleBloomComposer {
             magFilter: THREE.LinearFilter,
             format: THREE.RGBAFormat,
             type: THREE.HalfFloatType,
-            encoding: THREE.sRGBEncoding
+            encoding: THREE.sRGBEncoding,
+            stencilBuffer: true // gives the deeper kind of depth store: a star just behind a far truss of the 3D place (js/venue.js) is then hidden, not shown through it
         });
         this.bloomTarget = new THREE.WebGLRenderTarget(Math.floor(w / 2), Math.floor(h / 2));
         this.blurTarget = new THREE.WebGLRenderTarget(Math.floor(w / 2), Math.floor(h / 2));
@@ -38,9 +39,12 @@ class SimpleBloomComposer {
         this.trailFresh = true;
 
         this.point = new THREE.Vector2(0.5, 0.5);
+        this.from = new THREE.Vector2(0.5, 0.5); // where the pointer was at the last frame
         this.lastPoint = null;
         this.delta = new THREE.Vector2(0, 0);
         this.press = 0;       // 0 to 1: a press at `point`, used up by the next frame
+        this.glitch = 0;      // 0 to 1: a burst of signal tearing, fades by itself (set it to start one)
+        this.swoosh = 0;      // -1 to 1: the whole image streaks sideways (negative = to the left), fades by itself
         this.scrollVel = 0;   // -1 to 1, set from main.js
         this.amount = 1;      // 0 switches the reactive pass off (reduced motion)
 
@@ -147,6 +151,7 @@ class SimpleBloomComposer {
                 tPrev: { value: null },
                 uTexel: { value: new THREE.Vector2(1 / 192, 1 / 108) },
                 uPoint: { value: this.point },
+                uFrom: { value: this.from },
                 uDelta: { value: this.delta },
                 uAspect: { value: 1 },
                 uPress: { value: 0 },
@@ -157,6 +162,7 @@ class SimpleBloomComposer {
                 uniform sampler2D tPrev;
                 uniform vec2 uTexel;
                 uniform vec2 uPoint;
+                uniform vec2 uFrom;
                 uniform vec2 uDelta;
                 uniform float uAspect;
                 uniform float uPress;
@@ -170,9 +176,14 @@ class SimpleBloomComposer {
                                  + texture2D(tPrev, vUv + vec2(0.0, uTexel.y)).rg + texture2D(tPrev, vUv - vec2(0.0, uTexel.y)).rg) * 0.25;
                     vec2 f = (mix(here, around, 0.4) - MID) * 0.955;      // spread out and fade
                     f = sign(f) * max(abs(f) - 0.7 / 255.0, 0.0);         // and reach exactly zero
+                    // The push is laid along the whole stroke since the last frame, so a fast move
+                    // (or a phone that reports a finger only a few times a second) leaves no gaps.
+                    vec2 pa = vUv - uFrom, ba = uPoint - uFrom;
+                    pa.x *= uAspect; ba.x *= uAspect;
+                    vec2 along = pa - ba * clamp(dot(pa, ba) / max(dot(ba, ba), 0.000001), 0.0, 1.0);
+                    f += uDelta * exp(-dot(along, along) / 0.0052);       // the pointer's push
                     vec2 d = vUv - uPoint;
                     d.x *= uAspect;
-                    f += uDelta * exp(-dot(d, d) / 0.0052);               // the pointer's push
                     f += d * 11.0 * exp(-dot(d, d) / 0.008) * uPress;      // a press: a ring pushing outward
                     f = mix(clamp(f, -0.49, 0.49), vec2(0.0), uReset);
                     gl_FragColor = vec4(f + MID, 0.0, 1.0);
@@ -186,6 +197,9 @@ class SimpleBloomComposer {
                 tDiffuse: { value: null },
                 tTrail: { value: null },
                 uVel: { value: 0 },
+                uGlitch: { value: 0 },
+                uSwoosh: { value: 0 },
+                uTime: { value: 0 },
                 uAmount: { value: 1 }
             },
             vertexShader: quadVertex,
@@ -193,6 +207,9 @@ class SimpleBloomComposer {
                 uniform sampler2D tDiffuse;
                 uniform sampler2D tTrail;
                 uniform float uVel;
+                uniform float uGlitch;
+                uniform float uSwoosh;
+                uniform float uTime;
                 uniform float uAmount;
                 varying vec2 vUv;
                 const float MID = 128.0 / 255.0;
@@ -201,6 +218,20 @@ class SimpleBloomComposer {
                     vec2 uv = vUv;
                     vec2 c = uv - 0.5;
                     float v = uVel * uAmount;
+
+                    // A burst of signal tearing when the picture changes: some rows jump sideways
+                    // for a few frames, like a monitor losing sync.
+                    float g = uGlitch * uAmount;
+                    if (g > 0.01) {
+                        float row = floor(vUv.y * 38.0);
+                        float h = fract(sin(row * 91.7 + floor(uTime * 24.0) * 37.3) * 43758.5453);
+                        uv.x += (fract(h * 17.3) - 0.5) * 0.085 * g * step(1.0 - g * 0.5, h);
+                    }
+
+                    // A picture changed by hand: everything is swept sideways for a moment, the
+                    // middle rows leading and the top and bottom trailing.
+                    float sw = uSwoosh * uAmount;
+                    uv.x -= sw * 0.03 * (1.0 - c.y * c.y * 3.2);
 
                     // Scrolling: the picture bows like a sheet being pulled, edges trailing the middle.
                     uv.y += v * 0.05 * (c.x * c.x * 2.4 - 0.1);
@@ -215,7 +246,7 @@ class SimpleBloomComposer {
                     // (js/artscene.js); splitting those turns them into coloured static, so the
                     // split fades out there and only fringes the edge of the wake.
                     float hard = smoothstep(0.18, 0.5, length(flow));
-                    vec2 split = flow * 0.0045 * (1.0 - hard) + vec2(0.0, v * 0.007) + c * dot(c, c) * 0.004;
+                    vec2 split = flow * 0.0045 * (1.0 - hard) + vec2(g * 0.006 + sw * 0.009, v * 0.007) + c * dot(c, c) * 0.004;
                     vec3 col = vec3(
                         texture2D(tDiffuse, uv + split).r,
                         texture2D(tDiffuse, uv).g,
@@ -230,6 +261,18 @@ class SimpleBloomComposer {
                             if (i != 0.0) s += texture2D(tDiffuse, uv + vec2(0.0, i * v * 0.011)).rgb;
                         }
                         col = mix(col, s / 5.0, smear);
+                    }
+                    // ...and the sweep leaves streaks behind whatever is moving.
+                    float streak = min(1.0, abs(sw) * 1.5);
+                    if (streak > 0.03) {
+                        vec3 s = col;
+                        float total = 1.0;
+                        for (float i = 1.0; i <= 6.0; i += 1.0) {
+                            float wt = 1.0 - i / 7.0;
+                            s += texture2D(tDiffuse, uv + vec2(sw * i * 0.017, 0.0)).rgb * wt;
+                            total += wt;
+                        }
+                        col = mix(col, s / total, streak);
                     }
                     gl_FragColor = vec4(col, 1.0);
                 }
@@ -250,6 +293,7 @@ class SimpleBloomComposer {
     // A press or tap at the pointer (0..1 across and up the window): strength 0 to 1.
     pressAt(x, y, strength) {
         this.pointer(x, y, true);
+        this.from.set(x, y);
         this.press = Math.max(this.press, strength === undefined ? 1 : strength);
     }
 
@@ -314,12 +358,18 @@ class SimpleBloomComposer {
         this.trailFresh = false;
         const swap = this.trailA; this.trailA = this.trailB; this.trailB = swap;
         this.delta.set(0, 0);
+        this.from.copy(this.point);
 
         // To the screen
         const fu = this.finalShader.uniforms;
         fu.tDiffuse.value = this.finalTarget.texture;
         fu.tTrail.value = this.trailA.texture;
         fu.uVel.value = this.scrollVel;
+        fu.uGlitch.value = this.glitch;
+        fu.uTime.value = (performance.now() / 1000) % 600;
+        this.glitch = this.glitch < 0.02 ? 0 : this.glitch * 0.87;
+        fu.uSwoosh.value = this.swoosh;
+        this.swoosh = Math.abs(this.swoosh) < 0.02 ? 0 : this.swoosh * 0.9;
         fu.uAmount.value = this.amount;
         this.pass(this.finalShader, null);
     }
