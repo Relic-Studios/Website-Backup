@@ -1,45 +1,61 @@
-# venue_geo.py -- procedural geometry for the Relic "truss cathedral" venue.
+# venue_geo.py -- procedural geometry for the Relic "truss cathedral" venue (second build, 2026-11-18).
 # Pure numpy, no bpy. Everything is authored in EXPORTED space:
 #   three.js axes (X right, Y up, Z toward the viewer), 20 units = 1 metre.
 # Blender space is (x, -z, y) / 20 (see to_blender()).
 #
 # Hard edges are made by NOT sharing vertices; smooth parts (tubes) share them.
 # The mesh that Blender bakes is vertex-for-vertex the mesh that is exported.
+#
+# Level of detail is set by distance from the camera (which looks from +z toward the wall at z = 0):
+#   near  (arches at z 710, 850 and everything beside them): 8-sided chords, 6-sided lacing,
+#         conical couplers with pins at every section joint, outriggers + ballast, cable looms, chains
+#   mid   (z 430, 570): 6-sided chords, 4-sided lacing, couplers without pins, two outriggers
+#   far   (z 150, 290 and the wall end): 5-sided chords, 3-sided lacing, no couplers
+# Every vertex carries a piece number (which truss section or unit it flies in with, js/venue.js)
+# and two wear values in its texture coordinates (u: dark steel hardware, v: grille / edge).
 import math
 import numpy as np
 
 UNITS_PER_METRE = 20.0
-KIND_ORDER = ["floor", "baked", "led", "lens"]
-# parts that cast shadows / bounce light in the bake; everything else (thin truss, blocks, fixtures)
-# only receives light, so members buried in each other at the joints do not bake black
-SOLID_CHUNKS = {"floor", "plinth", "plinth-trim", "frame-main", "frame-side", "speakers", "grilles"}
+KIND_ORDER = ["floor", "baked", "coat", "led", "lens", "glow"]
 
 # ----------------------------------------------------------------------------
 # design constants (exported units)
 # ----------------------------------------------------------------------------
 ARCH_Z = [150.0, 290.0, 430.0, 570.0, 710.0, 850.0]
-HALF_SPAN = 220.0          # inner clear half span (legs at x = +-220)
+ARCH_TIER = ["far", "far", "mid", "mid", "near", "near"]
+LOD = {
+    "near": dict(nc=8, nl=6, cpl=True, pins=True),
+    "mid": dict(nc=6, nl=4, cpl=True, pins=False),
+    "far": dict(nc=5, nl=3, cpl=False, pins=False),
+}
+HALF_SPAN = 220.0          # inner chord of the legs at x = +-220
 SPRING_Y = 250.0
-APEX_Y = 520.0             # inner apex (brief: "about 500"; 520 buys a properly pointed apex)
-APEX_SLOPE = math.radians(24.0)   # slope of each side at the apex, from horizontal
-TRUSS_D = 24.0             # arch truss depth (inner chord -> outer chords)
-TRUSS_W = 20.0             # arch truss width along the nave (between the two outer chords)
-N_LEG = 8                  # bays on each leg
-N_ARC = 12                 # bays on each arc
-R_CHORD = 1.7
-R_LACE = 1.0
-R_RUNG = 0.9
+APEX_Y = 520.0
+APEX_SLOPE = math.radians(24.0)
+TRUSS_D = 30.0             # arch truss depth (inner chord -> outer chords)
+TRUSS_W = 26.0             # arch truss width along the nave
+N_LEG = 8
+N_ARC = 12
+R_CHORD = 2.1
+R_LACE = 1.15
+R_RUNG = 1.0
+LEG_BASE = 3.0             # trusses start on top of their base plates
 
 MAIN = dict(x0=-110.0, x1=110.0, y0=46.0, y1=436.0, z=0.0)
 SIDE_W, SIDE_H, SIDE_Y0, SIDE_Z, SIDE_X = 46.0, 300.0, 70.0, 14.0, 178.0
 
-PL_X, PL_TOP, PL_BACK, PL_TOPFRONT, PL_FRONT = 150.0, 46.0, -30.0, 84.0, 120.0
-N_STEPS = 3                # treads between the plinth top and the floor
+ST_X, ST_TOP, ST_BACK, ST_FRONT = 150.0, 46.0, -30.0, 84.0     # stage deck
+STAIR_X, N_STEPS, STEP_D = 50.0, 3, 13.0                        # centre stair unit
+PA_X, PA_Z = 236.0, 60.0     # outboard of the side screens, clear of the picture
+TOWER_Z = -9.0             # gable towers and header, behind the screens
+HEADER_Y = 490.0
+BEAM_X, BEAM_Y = 200.0, 205.0   # the lighting beams (box truss) hung under the arches
+FLOOR_X = 460.0
 
-PA_X = 135.0
-PA_Z = 60.0
-GABLE_Z = 2.0
-LEG_BASE = 3.0            # trusses start on top of their base plates
+
+def tier_of_z(z):
+    return "near" if z > 640 else ("mid" if z > 360 else "far")
 
 
 def norm(v):
@@ -47,10 +63,20 @@ def norm(v):
     return v / np.linalg.norm(v)
 
 
+def perp(a, hint=None):
+    a = norm(a)
+    h = np.asarray(hint, float) if hint is not None else (np.array([1.0, 0, 0]) if abs(a[0]) < 0.9 else np.array([0, 1.0, 0]))
+    h = h - np.dot(h, a) * a
+    if np.linalg.norm(h) < 1e-6:
+        h = np.array([0, 0, 1.0]) - a[2] * a
+    return norm(h)
+
+
 # ----------------------------------------------------------------------------
 # primitives -> (verts (n,3), tris (m,3))
 # ----------------------------------------------------------------------------
 def merge(parts):
+    parts = [p for p in parts if p is not None and len(p[1])]
     V, T, off = [], [], 0
     for v, t in parts:
         v = np.asarray(v, float).reshape(-1, 3)
@@ -65,39 +91,27 @@ def poly_normal(f):
     f = np.asarray(f, float)
     n = np.zeros(3)
     for i in range(len(f)):
-        a, b = f[i], f[(i + 1) % len(f)]
-        n += np.cross(a, b)
+        n += np.cross(f[i], f[(i + 1) % len(f)])
     return n
 
 
-def convex(faces, centre=None, shared=False):
-    """Convex solid from polygon faces; each face is oriented outward from the centre.
-    shared=False -> every face owns its vertices (hard edges)."""
+def convex(faces, centre=None):
+    """Convex solid from polygon faces, each oriented outward from the centre; every face owns its vertices."""
     pts = np.array([p for f in faces for p in f], float)
     c = pts.mean(0) if centre is None else np.asarray(centre, float)
     V, T = [], []
     for f in faces:
         f = np.asarray(f, float)
-        n = poly_normal(f)
-        if np.dot(n, f.mean(0) - c) < 0:
+        if np.dot(poly_normal(f), f.mean(0) - c) < 0:
             f = f[::-1]
         base = len(V)
         V.extend(f)
         for k in range(1, len(f) - 1):
             T.append((base, base + k, base + k + 1))
-    V = np.array(V)
-    T = np.array(T, np.int64)
-    if shared:
-        key = np.round(V, 5)
-        uniq, inv = np.unique(key, axis=0, return_inverse=True)
-        inv = inv.reshape(-1)
-        V2 = np.zeros((len(uniq), 3))
-        V2[inv] = V
-        V, T = V2, inv[T]
-    return V, T
+    return np.array(V), np.array(T, np.int64)
 
 
-def box(c, half, R=None, skip=(), shared=False):
+def box(c, half, R=None, skip=()):
     """Oriented box. R columns are the local axes. skip: faces to omit, e.g. ('-y',)."""
     c = np.asarray(c, float)
     h = np.asarray(half, float)
@@ -114,38 +128,23 @@ def box(c, half, R=None, skip=(), shared=False):
         "+z": [P(-1, -1, 1), P(1, -1, 1), P(1, 1, 1), P(-1, 1, 1)],
         "-z": [P(-1, -1, -1), P(1, -1, -1), P(1, 1, -1), P(-1, 1, -1)],
     }
-    return convex([F[k] for k in F if k not in skip], centre=c, shared=shared)
+    return convex([F[k] for k in F if k not in skip], centre=c)
 
 
-def prism_xy(poly, z0, z1):
-    """Extrude a convex polygon given in the XY plane along z (hard edges)."""
-    poly = [np.array([p[0], p[1]]) for p in poly]
-    lo = [np.array([p[0], p[1], z0]) for p in poly]
-    hi = [np.array([p[0], p[1], z1]) for p in poly]
-    faces = [lo, hi]
-    n = len(poly)
-    for i in range(n):
-        j = (i + 1) % n
-        faces.append([lo[i], lo[j], hi[j], hi[i]])
-    return convex(faces)
-
-
-def spike(base_c, axis, half, height):
-    """Four-sided pyramid without a base face (the base is buried in a block)."""
-    base_c = np.asarray(base_c, float)
-    a = norm(axis)
-    h = np.array([1.0, 0, 0]) if abs(a[0]) < 0.9 else np.array([0, 1.0, 0])
-    e1 = norm(h - np.dot(h, a) * a)
-    e2 = np.cross(a, e1)
-    b = [base_c + half * e1, base_c + half * e2, base_c - half * e1, base_c - half * e2]
-    tip = base_c + a * height
-    faces = [[b[i], b[(i + 1) % 4], tip] for i in range(4)]
-    return convex(faces, centre=base_c + a * height * 0.25)
+def bar(p0, p1, w, h=None, up=(0, 1.0, 0)):
+    """Rectangular bar from p0 to p1 (hard edges), w across, h along 'up'."""
+    p0, p1 = np.asarray(p0, float), np.asarray(p1, float)
+    a = p1 - p0
+    L = np.linalg.norm(a)
+    a = a / L
+    ev = perp(a, up)
+    eu = np.cross(ev, a)
+    R = np.stack([eu, ev, a], axis=1)
+    return box((p0 + p1) / 2, (w / 2, (h or w) / 2, L / 2), R)
 
 
 def patch(o, eu, ev, us, vs, expect, diag=None):
-    """Planar grid. Vertex (i,j) = o + us[i]*eu + vs[j]*ev. Normal = eu x ev (checked against expect).
-    diag(i,j) -> True flips the quad diagonal."""
+    """Planar grid. Vertex (i,j) = o + us[i]*eu + vs[j]*ev. Normal = eu x ev (checked against expect)."""
     o, eu, ev = np.asarray(o, float), np.asarray(eu, float), np.asarray(ev, float)
     assert np.dot(np.cross(eu, ev), np.asarray(expect, float)) > 0, "patch normal is flipped"
     us, vs = np.asarray(us, float), np.asarray(vs, float)
@@ -162,10 +161,9 @@ def patch(o, eu, ev, us, vs, expect, diag=None):
     return V, np.array(T, np.int64)
 
 
-def polytube(pts, r, n=4, hint=None, phase=0.0, caps=(False, False)):
-    """Tube through a polyline with shared rings (smooth). Rings sit in the mitre plane at bends.
-    hint: vector (or per-node vectors) fixing the ring's first axis; None = use the bend-plane
-    normal (for zigzag lacing)."""
+def tube_rings(pts, r, n=4, hint=None, phase=0.0, radii=None, phases=None):
+    """Rings (N, n, 3) of a tube through a polyline. Rings sit in the mitre plane at bends.
+    hint: vector (or per-node vectors) fixing the ring's first axis; None = bend-plane normal (zigzags)."""
     pts = np.asarray(pts, float)
     N = len(pts)
     d = pts[1:] - pts[:-1]
@@ -203,32 +201,56 @@ def polytube(pts, r, n=4, hint=None, phase=0.0, caps=(False, False)):
             h = e1[j] - np.dot(e1[j], tang[i]) * tang[i]
             e1[i] = h / np.linalg.norm(h)
     e2 = np.cross(tang, e1)
+    rr = np.full(N, float(r)) if radii is None else np.asarray(radii, float)
+    ph = np.full(N, float(phase)) if phases is None else np.asarray(phases, float)
     V = np.zeros((N, n, 3))
     for k in range(n):
-        ang = phase + 2.0 * math.pi * k / n
-        V[:, k, :] = pts + r * (math.cos(ang) * e1 + math.sin(ang) * mit[:, None] * e2)
-    V = V.reshape(-1, 3)
+        ang = ph + 2.0 * math.pi * k / n
+        V[:, k, :] = pts + rr[:, None] * (np.cos(ang)[:, None] * e1 + np.sin(ang)[:, None] * mit[:, None] * e2)
+    return V
+
+
+def rings_mesh(V, caps=(False, False)):
+    N, n, _ = V.shape
     T = []
     for i in range(N - 1):
         for k in range(n):
             a, b = i * n + k, i * n + (k + 1) % n
             c, dd = (i + 1) * n + (k + 1) % n, (i + 1) * n + k
             T += [(a, b, c), (a, c, dd)]
-    if caps[0]:
-        for k in range(1, n - 1):
-            T.append((0, k + 1, k))
-    if caps[1]:
-        o = (N - 1) * n
-        for k in range(1, n - 1):
-            T.append((o, o + k, o + k + 1))
-    T = np.array(T, np.int64)
-    # self check: side faces must point away from the path
-    tri = V[T[: (N - 1) * n * 2]]
-    nrm = np.cross(tri[:, 1] - tri[:, 0], tri[:, 2] - tri[:, 0])
-    seg = np.repeat(np.arange(N - 1), n * 2)
-    mid = (pts[seg] + pts[seg + 1]) * 0.5
-    assert (np.einsum("ij,ij->i", nrm, tri.mean(1) - mid) > 0).all(), "tube winding"
-    return V, T
+    W = V.reshape(-1, 3)
+    extra = []
+    for end, flip in ((0, True), (N - 1, False)):
+        if not caps[0 if end == 0 else 1]:
+            continue
+        # caps own their vertices (hard edge against the side)
+        base = len(W) + sum(len(e) for e in extra)
+        ring = V[end]
+        extra.append(np.vstack([ring.mean(0)[None], ring]))
+        for k in range(n):
+            a, b = base + 1 + k, base + 1 + (k + 1) % n
+            T.append((base, b, a) if flip else (base, a, b))
+    if extra:
+        W = np.vstack([W] + extra)
+    return W, np.array(T, np.int64)
+
+
+def polytube(pts, r, n=4, hint=None, phase=0.0, caps=(False, False)):
+    return rings_mesh(tube_rings(pts, r, n, hint, phase), caps)
+
+
+def lathe(c, axis, prof, n, hint=None, phase=0.0, caps=(False, False)):
+    """Surface of revolution about axis through c. prof: [(t, r), ...] along the axis."""
+    a = norm(axis)
+    c = np.asarray(c, float)
+    e1 = perp(a, hint)
+    e2 = np.cross(a, e1)
+    V = np.zeros((len(prof), n, 3))
+    for i, (t, r) in enumerate(prof):
+        for k in range(n):
+            ang = phase + 2 * math.pi * k / n
+            V[i, k] = c + a * t + r * (math.cos(ang) * e1 + math.sin(ang) * e2)
+    return rings_mesh(V, caps)
 
 
 def zigzag(A, B):
@@ -241,38 +263,86 @@ def zigzag(A, B):
     return np.array(out)
 
 
-def tri_truss(A, B, C, Bchord, Cchord, chord_hint, rc=R_CHORD, rl=R_LACE, rr=R_RUNG):
-    """Triangular Warren truss. A: N+1 nodes of the single chord. B, C: N mid-bay nodes of the
-    two other chords. Bchord/Cchord: full polylines of those chords (may hold extra points)."""
-    A, B, C = np.asarray(A, float), np.asarray(B, float), np.asarray(C, float)
-    parts = [
-        polytube(A, rc, 4, hint=chord_hint),
-        polytube(Bchord, rc, 4, hint=chord_hint),
-        polytube(Cchord, rc, 4, hint=chord_hint),
-        polytube(zigzag(A, B), rl, 3),
-        polytube(zigzag(A, C), rl, 3),
-    ]
-    for i in range(len(B)):
-        parts.append(polytube([B[i], C[i]], rr, 3, hint=A[i + 1] - A[i]))
+def coupler(p, tang, rc, n, pins, hint=None):
+    """Conical coupler around a chord at p: a double cone with a flat collar; near ones get a pin."""
+    k = 1.42
+    prof = [(-3.6, rc * 1.0), (-1.5, rc * k), (1.5, rc * k), (3.6, rc * 1.0)]
+    parts = [lathe(p, tang, prof, n, hint=hint, phase=math.pi / n)]
+    if pins:
+        e = perp(tang, hint)
+        parts.append(polytube([p - e * rc * 2.0, p + e * rc * 2.0], 0.42, 4, hint=tang))
     return merge(parts)
 
 
-def ladder_truss(A, B, Bchord, chord_hint, rc=R_CHORD, rl=R_LACE):
-    """Flat Warren ladder: chord A (N+1 nodes), chord B (N mid-bay nodes), one zigzag."""
-    A, B = np.asarray(A, float), np.asarray(B, float)
-    return merge([
-        polytube(A, rc, 4, hint=chord_hint),
-        polytube(Bchord, rc, 4, hint=chord_hint),
-        polytube(zigzag(A, B), rl, 3),
-    ])
+def chain(p_top, p_bot, r=0.55, link=2.3):
+    """A hanging chain: alternating fat and thin rings turned 45 degrees, so it reads as links."""
+    p_top, p_bot = np.asarray(p_top, float), np.asarray(p_bot, float)
+    L = np.linalg.norm(p_bot - p_top)
+    N = max(3, int(L / (link * 0.5)) + 1)
+    pts = p_top + np.linspace(0, 1, N)[:, None] * (p_bot - p_top)
+    radii = np.where(np.arange(N) % 2 == 0, r, r * 0.45)
+    phases = np.where(np.arange(N) % 4 < 2, 0.0, math.pi / 4)
+    return rings_mesh(tube_rings(pts, r, 4, hint=[1.0, 0, 0], radii=radii, phases=phases))
 
 
-def straight_nodes(p0, p1, nb, off):
-    """Nodes of one chord of a straight truss: (N+1 bay nodes, N mid nodes)."""
-    p0, p1, off = np.asarray(p0, float), np.asarray(p1, float), np.asarray(off, float)
-    f = np.arange(nb + 1) / nb
-    fm = (np.arange(nb) + 0.5) / nb
-    return p0 + f[:, None] * (p1 - p0) + off, p0 + fm[:, None] * (p1 - p0) + off
+def wire(p_top, p_bot, r=0.32):
+    return polytube([p_top, p_bot], r, 3, hint=[1.0, 0, 0])
+
+
+def hoist(p_top, length=12.0, r=4.2):
+    """Chain hoist motor body hanging from p_top: a hook block, the round motor and its gearbox."""
+    p_top = np.asarray(p_top, float)
+    y = np.array([0, 1.0, 0])
+    body = lathe(p_top - y * (3 + length / 2), y, [(-length / 2, r * 0.8), (-length / 2 + 1.2, r), (length / 2 - 1.2, r), (length / 2, r * 0.8)],
+                 8, caps=(True, True))
+    hook = box(p_top - y * 1.5, (1.0, 1.8, 1.0))
+    gear = box(p_top - y * (3 + length / 2) + np.array([r + 1.2, 0, 0]), (1.4, length * 0.32, r * 0.7))
+    return merge([body, hook, gear]), p_top - y * (3 + length)
+
+
+# ----------------------------------------------------------------------------
+# trusses
+# ----------------------------------------------------------------------------
+def straight_truss(p0, p1, up, corners, nb, lod, rc=R_CHORD, rl=R_LACE, cuts=None, end_cpl=False):
+    """Straight truss from p0 to p1 with chords at 'corners' [(u, v)] in the frame (eu, ev = up).
+    Returns a list of sections: dict(truss=mesh, steel=mesh|None, a=, b=, mid=point)."""
+    nc, nl = lod["nc"], lod["nl"]
+    p0, p1 = np.asarray(p0, float), np.asarray(p1, float)
+    d = p1 - p0
+    a_ = norm(d)
+    ev = perp(a_, up)
+    eu = np.cross(ev, a_)
+    t = np.arange(nb + 1) / nb
+    cuts = cuts or [0, nb]
+    C = [p0 + t[:, None] * d + u * eu + v * ev for (u, v) in corners]
+    rings = [tube_rings(c, rc, nc, hint=ev, phase=math.pi / nc) for c in C]
+    m = len(corners)
+    out = []
+    for si in range(len(cuts) - 1):
+        a, b = cuts[si], cuts[si + 1]
+        parts = [rings_mesh(R[a:b + 1]) for R in rings]
+        for f in range(m if m > 2 else 1):
+            ca, cb = C[f], C[(f + 1) % m]
+            zz = np.array([(ca if (i + f) % 2 == 0 else cb)[i] for i in range(a, b + 1)])
+            if len(zz) >= 3:
+                parts.append(polytube(zz, rl, nl))
+            else:
+                parts.append(polytube(zz, rl, nl, hint=ev))
+        steel = []
+        if lod["cpl"]:
+            ks = [b] if b != nb else []
+            if end_cpl:
+                ks = sorted(set(ks + [a, b]))
+            for k in ks:
+                for c in C:
+                    steel.append(coupler(c[k], a_, rc, nc, lod["pins"], hint=ev))
+        out.append(dict(truss=merge(parts), steel=merge(steel) if steel else None, a=a, b=b,
+                        mid=p0 + d * (a + b) / (2 * nb)))
+    return out
+
+
+def box_corners(w, h):
+    return [(-w / 2, -h / 2), (w / 2, -h / 2), (w / 2, h / 2), (-w / 2, h / 2)]
 
 
 # ----------------------------------------------------------------------------
@@ -294,6 +364,19 @@ def arch_point(phi):
     return C + R * n, n
 
 
+def arch_y_at_x(x):
+    """Height of the inner chord of the arc (right half) where it passes x."""
+    R, C, phiS, phiA = arch_params()
+    lo, hi = phiS, phiA
+    for _ in range(60):
+        mid = (lo + hi) / 2
+        if arch_point(mid)[0][0] > x:
+            lo = mid
+        else:
+            hi = mid
+    return arch_point(lo)[0][1]
+
+
 def arch_nodes():
     """Right half, base -> apex. Returns A nodes (pos, mitred normal) and mid-bay nodes."""
     R, C, phiS, phiA = arch_params()
@@ -306,16 +389,22 @@ def arch_nodes():
         A.append(arch_point(phiS + (phiA - phiS) * j / N_ARC))
     for j in range(N_ARC):
         M.append(arch_point(phiS + (phiA - phiS) * (j + 0.5) / N_ARC))
-    # mitred normals at the springing kink and at the apex
     n1, n2 = np.array([1.0, 0.0]), np.array([math.cos(phiS), math.sin(phiS)])
     A[N_LEG] = (A[N_LEG][0], (n1 + n2) / (1 + np.dot(n1, n2)))
     A[-1] = (A[-1][0], np.array([0.0, 1.0 / math.sin(phiA)]))
     return A, M
 
 
-def build_arch(z0):
+NH = N_LEG + N_ARC
+ARCH_CUTS = [0, 4, 8, 12, 16, NH + 4, NH + 8, NH + 12, NH + 16, 2 * NH]
+KINKS = [N_LEG, NH, 2 * NH - N_LEG]
+
+
+def build_arch(z0, lod):
+    """One arch as truss sections (left leg low, left leg high, ..., crown, ..., right leg low).
+    Returns list of dict(truss, steel, a, b, side)."""
+    nc, nl = lod["nc"], lod["nl"]
     A, M = arch_nodes()
-    NH = N_LEG + N_ARC
 
     def mir(pn):
         p, n = pn
@@ -327,91 +416,110 @@ def build_arch(z0):
     def p3(p, n, dn, dz):
         return np.array([p[0] + dn * n[0], p[1] + dn * n[1], z0 + dz])
 
-    An = np.array([p3(p, n, 0, 0) for p, n in fullA])
     hw = TRUSS_W / 2
+    An = np.array([p3(p, n, 0, 0) for p, n in fullA])
     Bn = np.array([p3(p, n, TRUSS_D, +hw) for p, n in fullM])
     Cn = np.array([p3(p, n, TRUSS_D, -hw) for p, n in fullM])
+    keys = sorted(set(ARCH_CUTS + KINKS))
 
-    def chord(dz):
-        pts = []
-        pts.append(p3(*fullA[0], TRUSS_D, dz))
-        for k, (p, n) in enumerate(fullM):
-            pts.append(p3(p, n, TRUSS_D, dz))
-            # extra chord points at the kinks (springing left/right) and at the apex
-            if k in (N_LEG - 1, NH - 1, 2 * NH - N_LEG - 1):
-                q = fullA[k + 1]
-                pts.append(p3(q[0], q[1], TRUSS_D, dz))
-        pts.append(p3(*fullA[-1], TRUSS_D, dz))
-        return np.array(pts)
+    def outer(dz):
+        s, pts = [], []
+        for k in range(2 * NH + 1):
+            if k in keys:
+                s.append(float(k))
+                pts.append(p3(*fullA[k], TRUSS_D, dz))
+            if k < 2 * NH:
+                s.append(k + 0.5)
+                pts.append(p3(*fullM[k], TRUSS_D, dz))
+        return np.array(s), np.array(pts)
 
-    return tri_truss(An, Bn, Cn, chord(+hw), chord(-hw), chord_hint=[0, 0, 1.0])
+    sB, PB = outer(+hw)
+    sC, PC = outer(-hw)
+    hint = [0, 0, 1.0]
+    RA = tube_rings(An, R_CHORD, nc, hint=hint, phase=math.pi / nc)
+    RB = tube_rings(PB, R_CHORD, nc, hint=hint, phase=math.pi / nc)
+    RC = tube_rings(PC, R_CHORD, nc, hint=hint, phase=math.pi / nc)
+    sections = []
+    for si in range(len(ARCH_CUTS) - 1):
+        a, b = ARCH_CUTS[si], ARCH_CUTS[si + 1]
+        ib = np.nonzero((sB >= a) & (sB <= b))[0]
+        parts = [rings_mesh(RA[a:b + 1]), rings_mesh(RB[ib[0]:ib[-1] + 1]), rings_mesh(RC[ib[0]:ib[-1] + 1]),
+                 polytube(zigzag(An[a:b + 1], Bn[a:b]), R_LACE, nl),
+                 polytube(zigzag(An[a:b + 1], Cn[a:b]), R_LACE, nl)]
+        for i in range(a, b):
+            parts.append(polytube([Bn[i], Cn[i]], R_RUNG, nl, hint=An[i + 1] - An[i]))
+        steel = []
+        if lod["cpl"]:
+            # couplers at the joints, carried by the section nearer the floor
+            ks = [b] if b <= NH else ([a] if a >= NH else [])
+            ks = [k for k in ks if 0 < k < 2 * NH]
+            for k in ks:
+                tng = norm(An[min(k + 1, 2 * NH)] - An[max(k - 1, 0)])
+                for P in (An[k], p3(*fullA[k], TRUSS_D, +hw), p3(*fullA[k], TRUSS_D, -hw)):
+                    steel.append(coupler(P, tng, R_CHORD, nc, lod["pins"], hint=hint))
+        side = -1 if b <= NH and a < 16 else (1 if a >= NH + 4 else 0)
+        sections.append(dict(truss=merge(parts), steel=merge(steel) if steel else None, a=a, b=b, side=side))
+    return sections
 
 
 # ----------------------------------------------------------------------------
-# moving head
+# moving head (black, hanging)
 # ----------------------------------------------------------------------------
-def moving_head(attach, up, aim):
-    """Hanging moving head. attach: point on the truss, up: toward the truss, aim: unit beam dir.
-    Returns (body parts, lens part, lens centre)."""
+def moving_head(attach, aim):
+    """Hanging moving head under a truss. attach: point under the bottom chord, aim: unit beam dir.
+    Returns (body, steel clamp, lens part, lens centre, aim)."""
     attach = np.asarray(attach, float)
-    u, a = norm(up), norm(aim)
+    u = np.array([0, 1.0, 0])
+    a = norm(aim)
     t = np.cross(u, a)
     if np.linalg.norm(t) < 1e-3:
-        t = np.cross(u, [0, 0, 1.0])
+        t = np.array([1.0, 0, 0])
     t = norm(t)
     f = np.cross(t, u)
     R = np.stack([t, u, f], axis=1)
+    clamp = box(attach - u * 1.8, (1.6, 3.2, 2.6))
     body = [
-        box(attach - u * 2.25, (6.5, 2.25, 4.5), R, shared=True),
-        box(attach - u * 5.0, (7.9, 1.5, 2.6), R, shared=True),   # sunk into the base and past the arms: no coplanar faces
-        box(attach - u * 12.0 + t * 6.7, (0.9, 6.0, 2.3), R, shared=True),
-        box(attach - u * 12.0 - t * 6.7, (0.9, 6.0, 2.3), R, shared=True),
+        lathe(attach - u * 3.2, -u, [(0, 6.6), (3.6, 6.6), (4.4, 6.0)], 10, caps=(True, True)),     # base
+        box(attach - u * 8.6, (8.6, 1.2, 2.6), R),                                                       # yoke top
+        box(attach - u * 15.2 + t * 7.4, (0.9, 6.2, 2.4), R),                                            # yoke arms
+        box(attach - u * 15.2 - t * 7.4, (0.9, 6.2, 2.4), R),
     ]
-    pivot = attach - u * 15.5
-    hy = np.cross(a, t)  # t x hy = a
-
-    def ring(c, r):
-        return np.array([c + r * (math.cos(math.radians(45 * k + 22.5)) * t + math.sin(math.radians(45 * k + 22.5)) * hy)
-                         for k in range(8)])
-
-    tail, back, front = ring(pivot - a * 8.5, 3.0), ring(pivot - a * 5.0, 5.0), ring(pivot + a * 6.5, 5.0)
-    V = np.concatenate([tail, back, front])
-    T = []
-    for k in range(1, 7):
-        T.append((0, k + 1, k))  # tail cap, faces -a
-    for r0 in (0, 8):
-        for k in range(8):
-            a0, b0 = r0 + k, r0 + (k + 1) % 8
-            c0, d0 = r0 + 8 + (k + 1) % 8, r0 + 8 + k
-            T += [(a0, b0, c0), (a0, c0, d0)]
-    body.append((V, np.array(T, np.int64)))
+    pivot = attach - u * 17.0
+    body.append(polytube([pivot - t * 7.0, pivot + t * 7.0], 1.4, 6, hint=a))                           # tilt axle
+    head = lathe(pivot, a, [(-8.0, 3.2), (-6.4, 4.8), (4.8, 5.2), (6.5, 5.2)], 10, caps=(True, False))
+    body.append(head)
     lens_c = pivot + a * 6.5
-    outer, inner = ring(lens_c, 5.0), ring(lens_c, 4.1)
+    # bezel: ring from the barrel's lip in to the lens
+    e1 = perp(a)
+    e2 = np.cross(a, e1)
+    ring = lambda c, r: np.array([c + r * (math.cos(2 * math.pi * k / 10) * e1 + math.sin(2 * math.pi * k / 10) * e2) for k in range(10)])
+    outer, inner = ring(lens_c, 5.2), ring(lens_c + a * 0.01, 4.0)
     Vb = np.concatenate([outer, inner])
     Tb = []
-    for k in range(8):
-        o0, o1, i0, i1 = k, (k + 1) % 8, 8 + k, 8 + (k + 1) % 8
+    for k in range(10):
+        o0, o1, i0, i1 = k, (k + 1) % 10, 10 + k, 10 + (k + 1) % 10
         Tb += [(o0, o1, i1), (o0, i1, i0)]
-    body.append((Vb, np.array(Tb, np.int64)))
-    lens_v = ring(lens_c, 4.1)
-    lens_t = np.array([(0, k, k + 1) for k in range(1, 7)], np.int64)
-    # checks: bezel and lens face +a, body shell faces outward
-    for VV, TT in ((Vb, np.array(Tb)), (lens_v, lens_t)):
-        tri = VV[TT]
-        assert (np.cross(tri[:, 1] - tri[:, 0], tri[:, 2] - tri[:, 0]) @ a > 0).all(), "lens winding"
-    tri = V[np.array(T)]
-    nr = np.cross(tri[:, 1] - tri[:, 0], tri[:, 2] - tri[:, 0])
-    assert (np.einsum("ij,ij->i", nr, tri.mean(1) - pivot) > 0).all(), "head winding"
-    return merge(body), (lens_v, lens_t), lens_c, a
+    Tb = np.array(Tb, np.int64)
+    tri = Vb[Tb]
+    if (np.cross(tri[:, 1] - tri[:, 0], tri[:, 2] - tri[:, 0]) @ a < 0).any():
+        Tb = Tb[:, ::-1]
+    body.append((Vb, Tb))
+    lens_v = np.vstack([(lens_c - a * 0.6)[None], ring(lens_c - a * 0.6, 4.0)])
+    lens_t = np.array([(0, 1 + k, 1 + (k + 1) % 10) for k in range(10)], np.int64)
+    tri = lens_v[lens_t]
+    if (np.cross(tri[:, 1] - tri[:, 0], tri[:, 2] - tri[:, 0]) @ a < 0).any():
+        lens_t = lens_t[:, ::-1]
+    return merge(body), clamp, (lens_v, lens_t), lens_v.mean(0), a
 
 
 # ----------------------------------------------------------------------------
 # the venue
 # ----------------------------------------------------------------------------
 class Chunk:
-    def __init__(self, name, v, t, mat, kind, smooth, uv, screen):
+    def __init__(self, name, v, t, mat, kind, smooth, uv, screen, piece, solid):
         self.name, self.v, self.t = name, np.asarray(v, float), np.asarray(t, np.int64)
         self.mat, self.kind, self.smooth, self.uv, self.screen = mat, kind, smooth, uv, screen
+        self.piece, self.solid = piece, solid
 
 
 class Venue:
@@ -419,274 +527,418 @@ class Venue:
         self.chunks = []
         self.fixtures = []
         self.screens = []
+        self.npieces = 0
 
-    def add(self, name, vt, mat, kind="baked", smooth=False, uv=None, screen=None):
+    def new_piece(self):
+        self.npieces += 1
+        return self.npieces
+
+    def add(self, name, vt, mat, kind="baked", smooth=False, uv=None, screen=None, piece=0, wear=(0.0, 0.0), solid=False):
+        if vt is None:
+            return
         v, t = vt
         assert len(t) and t.min() >= 0 and t.max() < len(v), name
-        self.chunks.append(Chunk(name, v, t, mat, kind, smooth, uv, screen))
+        if uv is None:
+            uv = np.broadcast_to(np.asarray(wear, float), (len(v), 2)).copy()
+        self.chunks.append(Chunk(name, v, t, mat, kind, smooth, uv, screen, piece, solid))
 
 
-def build(buttresses=True):
+# wear values carried in the texture coordinates of non-screen vertices (js/venue.js reads them)
+W_TRUSS = (0.0, 0.0)
+W_STEEL = (1.0, 0.0)      # couplers, pins, plates: darker steel
+W_PLATE = (0.7, 0.0)
+W_CHAIN = (0.85, 0.0)
+W_GRILLE = (0.0, 1.0)     # speaker grille: perforated
+W_EDGE = (0.0, 0.5)       # nosings, rails: worn bright edge
+
+
+def build():
     V = Venue()
 
     # ---- floor grid -------------------------------------------------------
-    xh = np.concatenate([np.linspace(0, 150, 13), np.linspace(150, 240, 8)[1:], np.linspace(240, 330, 6)[1:]])
+    xh = np.concatenate([np.linspace(0, 150, 13), np.linspace(150, 260, 10)[1:], np.linspace(260, FLOOR_X, 8)[1:]])
     xs = np.concatenate([-xh[:0:-1], xh])
     zs = np.concatenate([
-        [-60.0, -45.0], np.linspace(-30, 120, 13),
+        [-60.0, -45.0], np.linspace(-30, 84, 11), [96.0, 108.0, 120.0],
         120 + 7.0 * np.arange(1, 31), 330 + 10.0 * np.arange(1, 29), 610 + 14.0 * np.arange(1, 26)])
-    assert abs(zs[-1] - 960) < 1e-6 and abs(xs[0] + 330) < 1e-6
+    assert abs(zs[-1] - 960) < 1e-6 and abs(xs[0] + FLOOR_X) < 1e-6
     xmid = len(xs) // 2
     fv, ft = patch((0, 0, 0), (0, 0, 1), (1, 0, 0), zs, xs, (0, 1, 0), diag=lambda i, j: j >= xmid)
     cen = fv[ft].mean(1)
-    hidden = (np.abs(cen[:, 0]) < PL_X) & (cen[:, 2] > PL_BACK) & (cen[:, 2] < PL_FRONT)
+    hidden = (np.abs(cen[:, 0]) < ST_X) & (cen[:, 2] > ST_BACK) & (cen[:, 2] < ST_FRONT)
     ft = ft[~hidden]
     used = np.unique(ft)
     remap = np.full(len(fv), -1)
     remap[used] = np.arange(len(used))
-    V.add("floor", (fv[used], remap[ft]), "floor", kind="floor")
-    floor_grid = (len(xs) - 1, len(zs) - 1)
+    V.add("floor", (fv[used], remap[ft]), "floor", kind="floor", solid=True)
+    V.floor_grid = (len(xs) - 1, len(zs) - 1)
 
     # ---- LED screens ------------------------------------------------------
     def led(name, x0, x1, y0, y1, z, idx):
         v, t = patch((0, 0, z), (1, 0, 0), (0, 1, 0), [x0, x1], [y0, y1], (0, 0, 1))
         uv = np.stack([(v[:, 0] - x0) / (x1 - x0), (v[:, 1] - y0) / (y1 - y0)], axis=1)
-        V.add("led-" + name, (v, t), "led%d" % idx, kind="led", uv=uv, screen=idx)
+        V.add("led-" + name, (v, t), "led%d" % idx, kind="led", uv=uv, screen=idx, solid=True)
         V.screens.append(dict(name=name, min=[x0, y0, z], max=[x1, y1, z]))
 
     led("main", MAIN["x0"], MAIN["x1"], MAIN["y0"], MAIN["y1"], MAIN["z"], 0)
     led("left", -SIDE_X - SIDE_W / 2, -SIDE_X + SIDE_W / 2, SIDE_Y0, SIDE_Y0 + SIDE_H, SIDE_Z, 1)
     led("right", SIDE_X - SIDE_W / 2, SIDE_X + SIDE_W / 2, SIDE_Y0, SIDE_Y0 + SIDE_H, SIDE_Z, 2)
 
-    # ---- frames / back boxes ---------------------------------------------
-    def frame(x0, x1, y0, y1, z, bar, lip, depth, bottom):
-        """Border around an LED rectangle: front bars, a lip down to the LED plane, sides and back."""
-        X0, X1, Y1 = x0 - bar, x1 + bar, y1 + bar
-        Y0 = y0 - bar if bottom else y0
+    # ---- screen frames, bumpers, hoists ------------------------------------
+    def frame(x0, x1, y0, y1, z, bar_, lip, depth, bottom):
+        X0, X1, Y1 = x0 - bar_, x1 + bar_, y1 + bar_
+        Y0 = y0 - bar_ if bottom else y0
         zf, zb = z + lip, z - depth
-        P = []
-        P.append(patch((0, 0, zb), (0, 1, 0), (1, 0, 0), [Y0, Y1], [X0, X1], (0, 0, -1)))           # back
-        P.append(patch((X1, 0, 0), (0, 1, 0), (0, 0, 1), [Y0, Y1], [zb, zf], (1, 0, 0)))            # right side
-        P.append(patch((X0, 0, 0), (0, 0, 1), (0, 1, 0), [zb, zf], [Y0, Y1], (-1, 0, 0)))           # left side
-        P.append(patch((0, Y1, 0), (0, 0, 1), (1, 0, 0), [zb, zf], [X0, X1], (0, 1, 0)))            # top
-        P.append(patch((0, 0, zf), (1, 0, 0), (0, 1, 0), [x1, X1], [Y0, Y1], (0, 0, 1)))            # front right bar
-        P.append(patch((0, 0, zf), (1, 0, 0), (0, 1, 0), [X0, x0], [Y0, Y1], (0, 0, 1)))            # front left bar
-        P.append(patch((0, 0, zf), (1, 0, 0), (0, 1, 0), [x0, x1], [y1, Y1], (0, 0, 1)))            # front top bar
-        P.append(patch((x1, 0, 0), (0, 0, 1), (0, 1, 0), [z, zf], [y0, y1], (-1, 0, 0)))            # lip right
-        P.append(patch((x0, 0, 0), (0, 1, 0), (0, 0, 1), [y0, y1], [z, zf], (1, 0, 0)))             # lip left
-        P.append(patch((0, y1, 0), (1, 0, 0), (0, 0, 1), [x0, x1], [z, zf], (0, -1, 0)))            # lip top
+        P = [patch((0, 0, zb), (0, 1, 0), (1, 0, 0), [Y0, Y1], [X0, X1], (0, 0, -1)),
+             patch((X1, 0, 0), (0, 1, 0), (0, 0, 1), [Y0, Y1], [zb, zf], (1, 0, 0)),
+             patch((X0, 0, 0), (0, 0, 1), (0, 1, 0), [zb, zf], [Y0, Y1], (-1, 0, 0)),
+             patch((0, Y1, 0), (0, 0, 1), (1, 0, 0), [zb, zf], [X0, X1], (0, 1, 0)),
+             patch((0, 0, zf), (1, 0, 0), (0, 1, 0), [x1, X1], [Y0, Y1], (0, 0, 1)),
+             patch((0, 0, zf), (1, 0, 0), (0, 1, 0), [X0, x0], [Y0, Y1], (0, 0, 1)),
+             patch((0, 0, zf), (1, 0, 0), (0, 1, 0), [x0, x1], [y1, Y1], (0, 0, 1)),
+             patch((x1, 0, 0), (0, 0, 1), (0, 1, 0), [z, zf], [y0, y1], (-1, 0, 0)),
+             patch((x0, 0, 0), (0, 1, 0), (0, 0, 1), [y0, y1], [z, zf], (1, 0, 0)),
+             patch((0, y1, 0), (1, 0, 0), (0, 0, 1), [x0, x1], [z, zf], (0, -1, 0))]
         if bottom:
-            P.append(patch((0, Y0, 0), (1, 0, 0), (0, 0, 1), [X0, X1], [zb, zf], (0, -1, 0)))       # underside
-            P.append(patch((0, 0, zf), (1, 0, 0), (0, 1, 0), [x0, x1], [Y0, y0], (0, 0, 1)))        # front bottom bar
-            P.append(patch((0, y0, 0), (0, 0, 1), (1, 0, 0), [z, zf], [x0, x1], (0, 1, 0)))         # lip bottom
+            P += [patch((0, Y0, 0), (1, 0, 0), (0, 0, 1), [X0, X1], [zb, zf], (0, -1, 0)),
+                  patch((0, 0, zf), (1, 0, 0), (0, 1, 0), [x0, x1], [Y0, y0], (0, 0, 1)),
+                  patch((0, y0, 0), (0, 0, 1), (1, 0, 0), [z, zf], [x0, x1], (0, 1, 0))]
         return merge(P)
 
-    V.add("frame-main", frame(MAIN["x0"], MAIN["x1"], MAIN["y0"], MAIN["y1"], MAIN["z"], 4.0, 1.5, 8.0, False), "frame")
+    pw = V.new_piece()
+    V.add("frame-main", frame(MAIN["x0"], MAIN["x1"], MAIN["y0"], MAIN["y1"], MAIN["z"], 5.0, 1.5, 8.0, False), "coat", "coat", piece=pw, solid=True)
+    # rigging bumper on top of the wall: a flying bar with pick-up ears, four chains up to hoists on the header
+    bump = [box((0, 445.0, -2.5), (121.0, 3.5, 4.5))]
+    ears = []
+    for ex in (-100.0, -40.0, 40.0, 100.0):
+        ears.append(box((ex, 449.5, 0.0), (1.2, 1.5, 2.2)))
+    V.add("bumper", merge(bump), "coat", "coat", piece=pw, solid=True)
+    V.add("bumper-ears", merge(ears), "steel", wear=W_STEEL, piece=pw)
+    hb = HEADER_Y - 12.0 - 2.1          # under the header's bottom chords
+    for ex in (-100.0, -40.0, 40.0, 100.0):
+        mot, bot = hoist((ex, hb, 0.0), 11.0, 3.8)
+        ph = V.new_piece()
+        V.add("wall-hoist", mot, "coat", "coat", piece=ph)
+        V.add("wall-chain", chain((ex, bot[1], 0.0), (ex, 451.0, 0.0)), "steel", wear=W_CHAIN, piece=pw, smooth=True)
+        # slack chain hanging from the motor beside the load chain
+        V.add("wall-chain", chain((ex - 5.6, bot[1] + 4, 0.0), (ex - 5.6, bot[1] - 14, 0.0)), "steel",
+              wear=W_CHAIN, piece=ph, smooth=True)
     for sx in (-1, 1):
         cx = sx * SIDE_X
-        V.add("frame-side", frame(cx - SIDE_W / 2, cx + SIDE_W / 2, SIDE_Y0, SIDE_Y0 + SIDE_H, SIDE_Z, 2.5, 1.2, 6.0, True), "frame")
+        ps = V.new_piece()
+        V.add("frame-side", frame(cx - SIDE_W / 2, cx + SIDE_W / 2, SIDE_Y0, SIDE_Y0 + SIDE_H, SIDE_Z, 2.5, 1.2, 6.0, True), "coat", "coat",
+              piece=ps, solid=True)
+        # clamps tying the side screen back to its tower
+        cl = [bar((cx + dx, yy, SIDE_Z - 5.5), (cx + dx, yy, TOWER_Z + 12.0 + 1.2), 1.6) for dx in (-9.0, 9.0) for yy in (110.0, 330.0)]
+        V.add("side-clamps", merge(cl), "steel", wear=W_STEEL, piece=ps)
 
-    # ---- plinth -----------------------------------------------------------
-    xs12 = np.linspace(-PL_X, PL_X, 13)
-    xs24 = np.linspace(-PL_X, PL_X, 25)
-    nose = 1.2
-    riser_h = PL_TOP / (N_STEPS + 1)
-    step_d = (PL_FRONT - PL_TOPFRONT) / N_STEPS
-    P, Ptrim = [], []
-    # top: a hidden strip under/behind the wall, then the lit front field (separate vertices on purpose)
-    P.append(patch((0, PL_TOP, 0), (0, 0, 1), (1, 0, 0), [PL_BACK, -8.0, 1.5], xs12, (0, 1, 0)))
-    P.append(patch((0, PL_TOP, 0), (0, 0, 1), (1, 0, 0), [1.5, 6, 12, 20, 30, 42, 56, 70, PL_TOPFRONT - nose], xs24, (0, 1, 0)))
-    Ptrim.append(patch((0, PL_TOP, 0), (0, 0, 1), (1, 0, 0), [PL_TOPFRONT - nose, PL_TOPFRONT], xs12, (0, 1, 0)))
-    for k in range(N_STEPS + 1):
-        zr = PL_TOPFRONT + k * step_d
-        ytop = PL_TOP - k * riser_h
-        ybot = ytop - riser_h
-        Ptrim.append(patch((0, 0, zr), (1, 0, 0), (0, 1, 0), xs12, [ytop - nose, ytop], (0, 0, 1)))   # riser nosing
-        P.append(patch((0, 0, zr), (1, 0, 0), (0, 1, 0), xs12, [ybot, ytop - nose], (0, 0, 1)))       # riser
-        if k < N_STEPS:
-            P.append(patch((0, ybot, 0), (0, 0, 1), (1, 0, 0), [zr, zr + step_d - nose], xs12, (0, 1, 0)))        # tread
-            Ptrim.append(patch((0, ybot, 0), (0, 0, 1), (1, 0, 0), [zr + step_d - nose, zr + step_d], xs12, (0, 1, 0)))
+    # ---- stage: deck, fascia, centre stair, white edge light ---------------
+    pst = V.new_piece()
+    xs24 = np.linspace(-ST_X, ST_X, 25)
+    P, Pn = [], []
+    lip_z = ST_FRONT
+    P.append(patch((0, ST_TOP, 0), (0, 0, 1), (1, 0, 0), [ST_BACK, -8.0, 1.5], np.linspace(-ST_X, ST_X, 13), (0, 1, 0)))
+    P.append(patch((0, ST_TOP, 0), (0, 0, 1), (1, 0, 0), [1.5, 6, 12, 20, 30, 42, 56, 70, lip_z - 2.5], xs24, (0, 1, 0)))
+    # sides and back
     for sx in (-1, 1):
-        segs = [(PL_BACK, 1.5, PL_TOP), (1.5, 42.0, PL_TOP), (42.0, PL_TOPFRONT, PL_TOP)]
-        for k in range(N_STEPS):
-            segs.append((PL_TOPFRONT + k * step_d, PL_TOPFRONT + (k + 1) * step_d, PL_TOP - (k + 1) * riser_h))
-        for za, zb, yt in segs:
-            if sx > 0:
-                P.append(patch((PL_X, 0, 0), (0, 1, 0), (0, 0, 1), [0, yt], [za, zb], (1, 0, 0)))
-            else:
-                P.append(patch((-PL_X, 0, 0), (0, 0, 1), (0, 1, 0), [za, zb], [0, yt], (-1, 0, 0)))
-    P.append(patch((0, 0, PL_BACK), (0, 1, 0), (1, 0, 0), [0, PL_TOP], np.linspace(-PL_X, PL_X, 5), (0, 0, -1)))
-    V.add("plinth", merge(P), "plinth")
-    V.add("plinth-trim", merge(Ptrim), "trim")
+        if sx > 0:
+            P.append(patch((ST_X, 0, 0), (0, 1, 0), (0, 0, 1), [0, ST_TOP], [ST_BACK, 0, 40, lip_z], (1, 0, 0)))
+        else:
+            P.append(patch((-ST_X, 0, 0), (0, 0, 1), (0, 1, 0), [ST_BACK, 0, 40, lip_z], [0, ST_TOP], (-1, 0, 0)))
+    P.append(patch((0, 0, ST_BACK), (0, 1, 0), (1, 0, 0), [0, ST_TOP], np.linspace(-ST_X, ST_X, 5), (0, 0, -1)))
+    # fascia: a recessed backing with skirt panels in front of it (the seams read dark)
+    P.append(patch((0, 0, lip_z - 0.8), (1, 0, 0), (0, 1, 0), np.linspace(-ST_X, ST_X, 7), [0, 43.0], (0, 0, 1)))
+    fas = []
+    edges = [STAIR_X, 100.0, ST_X]
+    for sx in (-1, 1):
+        for a, b in zip(edges[:-1], edges[1:]):
+            x0, x1 = sorted((sx * (a + 0.6), sx * (b - 0.6)))
+            fas.append(box(((x0 + x1) / 2, 21.25, lip_z - 0.4), ((x1 - x0) / 2, 21.25, 0.4), skip=("-z", "-y")))
+    V.add("stage", merge(P), "coat", "coat", piece=pst, solid=True)
+    V.add("fascia", merge(fas), "coat", "coat", piece=pst, solid=True)
+    # aluminium nosing along the lip and the treads
+    Pn.append(box((0, 44.8, lip_z - 1.25), (ST_X, 1.5, 1.25), skip=("-z",)))
+    rh = ST_TOP / (N_STEPS + 1)
+    stair = []
+    for k in range(1, N_STEPS + 1):
+        z0, z1 = lip_z + (k - 1) * STEP_D, lip_z + k * STEP_D
+        top = ST_TOP - k * rh
+        stair.append(box((0, top / 2, (z0 + z1) / 2), (STAIR_X, top / 2, (z1 - z0) / 2), skip=("-y", "-z")))
+        Pn.append(box((0, top + 0.3, z1 - 0.7), (STAIR_X + 0.4, 0.3, 0.9), skip=("-y",)))
+    # handrails: posts and a rail each side of the stair
+    rail = []
+    zr0, zr1 = lip_z - 4.0, lip_z + N_STEPS * STEP_D - 3.0
+    for sx in (-1, 1):
+        x = sx * (STAIR_X - 2.0)
+        for zz, yb in ((zr0, ST_TOP), (zr1, ST_TOP - N_STEPS * rh)):
+            rail.append(polytube([(x, yb, zz), (x, yb + 20.0, zz)], 0.7, 5, hint=[1.0, 0, 0]))
+        rail.append(polytube([(x, ST_TOP + 20.0, zr0), (x, ST_TOP - N_STEPS * rh + 20.0, zr1)], 0.75, 5, hint=[1.0, 0, 0]))
+    V.add("stair", merge(stair), "coat", "coat", piece=pst, solid=True)
+    V.add("nosing", merge(Pn), "trim", wear=W_EDGE, piece=pst, solid=True)
+    V.add("handrail", merge(rail), "truss", piece=pst, smooth=True)
+    # the edge light: an LED channel standing proud of the lip's nosing
+    glow = box((0, 45.2, lip_z + 0.35), (ST_X - 1.0, 0.45, 0.35), skip=("-z",))
+    V.add("edge-light", glow, "glow", kind="glow", piece=pst)
 
-    # ---- arches, capitals, pendants, finials, base plates -----------------
-    R, C, phiS, phiA = arch_params()
-    arch_parts, blocks, spikes = [], [], []
-    y_out_apex = APEX_Y + TRUSS_D / math.sin(phiA)
-    for z0 in ARCH_Z:
-        arch_parts.append(build_arch(z0))
+    # ---- arches with clustered piers ---------------------------------------
+    pier_heads = []
+    for ai, z0 in enumerate(ARCH_Z):
+        tier = ARCH_TIER[ai]
+        lod = LOD[tier]
+        secs = build_arch(z0, lod)
+        leg_piece = {}
+        for s in secs:
+            pid = V.new_piece()
+            if s["a"] == 0:
+                leg_piece[-1] = pid
+            if s["b"] == 2 * NH:
+                leg_piece[1] = pid
+            V.add("arch-%s" % tier, s["truss"], "truss", smooth=True, piece=pid)
+            V.add("arch-cpl", s["steel"], "steel", wear=W_STEEL, smooth=True, piece=pid)
         for sx in (-1, 1):
-            cx, cy, hw_, hh_, ch = sx * (HALF_SPAN + TRUSS_D / 2), SPRING_Y + 2, 14.5, 11.0, 5.0
-            blocks.append(prism_xy([(cx - hw_ + ch, cy - hh_), (cx + hw_ - ch, cy - hh_), (cx + hw_, cy - hh_ + ch),
-                                    (cx + hw_, cy + hh_ - ch), (cx + hw_ - ch, cy + hh_), (cx - hw_ + ch, cy + hh_),
-                                    (cx - hw_, cy + hh_ - ch), (cx - hw_, cy - hh_ + ch)], z0 - 11.5, z0 + 11.5))
-            blocks.append(box((sx * (HALF_SPAN + TRUSS_D / 2), 1.5, z0), (22, 1.5, 19), skip=("-y",)))
-            spikes.append(spike((sx * (HALF_SPAN + TRUSS_D), SPRING_Y + 10, z0), (0, 1, 0), 4.0, 38))
-        # pendant boss: a rhombus that keeps the inner outline pointed
-        blocks.append(prism_xy([(0, APEX_Y - 12), (15, APEX_Y + 14), (0, y_out_apex + 10), (-15, APEX_Y + 14)], z0 - 13, z0 + 13))
-        spikes.append(spike((0, y_out_apex + 2, z0), (0, 1, 0), 5.0, 62))
-    V.add("arches", merge(arch_parts), "truss", smooth=True)
+            base_piece = leg_piece[sx]
+            xa = sx * HALF_SPAN
+            xo = sx * (HALF_SPAN + TRUSS_D)
+            # the two shafts that cluster with the leg (front and back along the nave)
+            for sz in (-1, 1):
+                zc = z0 + sz * 28.0
+                cx = sx * (HALF_SPAN + 15.0)
+                corners = [(-8.0, -sz * 5.0), (8.0, -sz * 5.0), (0.0, sz * 9.0)]
+                top = SPRING_Y - 12.0
+                shaft = straight_truss((cx, LEG_BASE, zc), (cx, top, zc), (0, 0, 1.0), corners, 9, lod,
+                                       rc=R_CHORD * 0.9, rl=R_LACE, cuts=[0, 4, 9])
+                for s in shaft:
+                    pid = V.new_piece()
+                    V.add("shaft-%s" % tier, s["truss"], "truss", smooth=True, piece=pid)
+                    V.add("shaft-cpl", s["steel"], "steel", wear=W_STEEL, smooth=True, piece=pid)
+                    if s["b"] == 9:
+                        # head plate and ties back to the leg
+                        head = box((cx, top + 1.8, zc + sz * 1.5), (12.0, 1.8, 12.5))
+                        V.add("shaft-head", head, "steel", wear=W_PLATE, piece=pid)
+                        ties = []
+                        for yy in (70.0, 150.0, top - 8.0):
+                            ties.append(polytube([(cx - sx * 8.0 * sx * sx, yy, zc - sz * 5.0), (xa, yy, z0)], 0.95, lod["nl"],
+                                                 hint=[0, 1.0, 0]))
+                            ties.append(polytube([(cx + sx * 8.0, yy, zc - sz * 5.0), (xo, yy, z0 + sz * TRUSS_W / 2)], 0.95, lod["nl"],
+                                                 hint=[0, 1.0, 0]))
+                        V.add("shaft-ties", merge(ties), "truss", smooth=True, piece=pid)
+            # base plate under the cluster
+            bx = sx * (HALF_SPAN + 15.0)
+            V.add("base-plate", box((bx, 1.5, z0), (31.0, 1.5, 42.0), skip=("-y",)), "steel", wear=W_PLATE, piece=base_piece, solid=True)
+            # bolts on the plate (near only)
+            if tier == "near":
+                bolts = [box((bx + dx, 3.5, z0 + dz), (1.0, 0.5, 1.0), skip=("-y",)) for dx in (-27.0, 27.0) for dz in (-38.0, 0.0, 38.0)]
+                V.add("base-bolts", merge(bolts), "steel", wear=W_STEEL, piece=base_piece)
+            # outriggers: braces from the leg down to screw-jack pads; outer pads carry ballast
+            if tier in ("near", "mid"):
+                braces, pads, ballast = [], [], []
+                dirs = [(1, 1), (1, -1), (-1, 1), (-1, -1)] if tier == "near" else [(1, 1), (1, -1)]
+                for ox, oz in dirs:
+                    outward = ox > 0
+                    px = bx + sx * ox * 58.0
+                    pz = z0 + oz * 58.0
+                    # the brace starts at a clamp on the shaft chord it hangs from (the shaft's
+                    # third corner is at z0 +/- 37) and is a round tube, like the rest of the rig
+                    top_p = np.array([bx, 44.0, z0 + oz * 37.0])
+                    foot = np.array([px, 7.5, pz])
+                    braces.append(polytube([top_p, foot], 1.35, 6, hint=[0, 1.0, 0], caps=(True, True)))
+                    braces.append(polytube([(bx, 41.5, z0 + oz * 37.0), (bx, 46.5, z0 + oz * 37.0)], R_CHORD * 0.9 + 0.9, 8,
+                                           hint=[1.0, 0, 0], caps=(True, True)))
+                    pads.append(box((px, 1.0, pz), (6.0, 1.0, 6.0), skip=("-y",)))
+                    pads.append(polytube([(px, 2.0, pz), (px, 7.5, pz)], 1.1, 6, hint=[1.0, 0, 0], caps=(False, True)))
+                    if outward:
+                        # ballast: three steel weights stacked on a wide pad beside the jack
+                        for k, (hx, hz) in enumerate(((9.0, 7.0), (8.0, 6.2), (7.0, 5.4))):
+                            ballast.append(box((px + sx * 16.0, 1.45 + 2.95 * k, pz), (hx, 1.45, hz), skip=("-y",)))
+                V.add("outrigger", merge(braces), "steel", wear=W_PLATE, piece=base_piece)
+                V.add("outrigger-pad", merge(pads), "steel", wear=W_STEEL, piece=base_piece, solid=True)
+                if ballast:
+                    V.add("ballast", merge(ballast), "coat", "coat", piece=base_piece, solid=True)
+            pier_heads.append((sx, z0, base_piece))
 
-    # ---- ridge and purlins -------------------------------------------------
-    ridge_y = APEX_Y + 6
-    z_a, z_b = 10.0, ARCH_Z[-1]
-    nb = int(round((z_b - z_a) / 28.0))
-    A, _ = straight_nodes((0, ridge_y, z_a), (0, ridge_y, z_b), nb, (0, 0, 0))
-    Bf, Bm = straight_nodes((0, ridge_y, z_a), (0, ridge_y, z_b), nb, (10, 20, 0))
-    Cf, Cm = straight_nodes((0, ridge_y, z_a), (0, ridge_y, z_b), nb, (-10, 20, 0))
-    truss_parts = [tri_truss(A, Bm, Cm, np.vstack([Bf[:1], Bm, Bf[-1:]]), np.vstack([Cf[:1], Cm, Cf[-1:]]), chord_hint=[0, 1.0, 0])]
+    # ---- lighting beams: box truss hung under the arches --------------------
+    beam_secs = {}
+    z_a, z_b = ARCH_Z[0] - 30.0, ARCH_Z[-1] + 30.0
+    cuts_z = [z_a, 330.0, 500.0, 640.0, 780.0, z_b]
+    hook_y = arch_y_at_x(BEAM_X) - R_CHORD
     for sx in (-1, 1):
-        z_a, z_b = ARCH_Z[0], ARCH_Z[-1]
-        nb = int(round((z_b - z_a) / 28.0))
-        xc = sx * (HALF_SPAN + TRUSS_D / 2)
-        A, _ = straight_nodes((xc, SPRING_Y - 9, z_a), (xc, SPRING_Y - 9, z_b), nb, (0, 0, 0))
-        Bf, Bm = straight_nodes((xc, SPRING_Y - 9, z_a), (xc, SPRING_Y - 9, z_b), nb, (-sx * 10, 22, 0))
-        Cf, Cm = straight_nodes((xc, SPRING_Y - 9, z_a), (xc, SPRING_Y - 9, z_b), nb, (sx * 10, 22, 0))
-        truss_parts.append(tri_truss(A, Bm, Cm, np.vstack([Bf[:1], Bm, Bf[-1:]]), np.vstack([Cf[:1], Cm, Cf[-1:]]), chord_hint=[0, 1.0, 0]))
-    V.add("ridge-purlins", merge(truss_parts), "truss", smooth=True)
+        for zi in range(len(cuts_z) - 1):
+            za, zb = cuts_z[zi], cuts_z[zi + 1]
+            tier = tier_of_z((za + zb) / 2)
+            nb = max(2, int(round((zb - za) / 20.0)))
+            sec = straight_truss((sx * BEAM_X, BEAM_Y, za), (sx * BEAM_X, BEAM_Y, zb), (0, 1.0, 0), box_corners(20.0, 20.0), nb,
+                                 LOD[tier], rc=R_CHORD * 0.85, rl=R_LACE * 0.95, end_cpl=(zi == 0))
+            pid = V.new_piece()
+            beam_secs[(sx, zi)] = pid
+            V.add("beam-%s" % tier, sec[0]["truss"], "truss", smooth=True, piece=pid)
+            V.add("beam-cpl", sec[0]["steel"], "steel", wear=W_STEEL, smooth=True, piece=pid)
 
-    # ---- gable frame behind the screens (towers + rafters) ----------------
-    gz = GABLE_Z
-    g_parts = []
-    tower_top = 400.0
-    gable_c = np.array([0.0, 534.0])
+    def beam_piece(sx, z):
+        for zi in range(len(cuts_z) - 1):
+            if cuts_z[zi] <= z <= cuts_z[zi + 1]:
+                return beam_secs[(sx, zi)]
+        return beam_secs[(sx, 0)]
+
+    for z0 in ARCH_Z:
+        tier = tier_of_z(z0)
+        for sx in (-1, 1):
+            x = sx * BEAM_X
+            pid = beam_piece(sx, z0)
+            top_beam = BEAM_Y + 10.0 + R_CHORD
+            if tier == "near":
+                # chain hoist: motor hung from the arch, load chain down to a round sling on the beam
+                mot, bot = hoist((x, hook_y, z0), 12.0, 4.0)
+                V.add("beam-hoist", mot, "coat", "coat", piece=pid)
+                V.add("beam-chain", chain(bot, (x, top_beam + 2.0, z0)), "steel", wear=W_CHAIN, piece=pid, smooth=True)
+                V.add("beam-chain", chain((x - 6.0, bot[1] + 3.0, z0), (x - 6.0, bot[1] - 22.0, z0)), "steel", wear=W_CHAIN,
+                      piece=pid, smooth=True)
+                V.add("beam-sling", box((x, top_beam + 1.0, z0), (11.0, 1.0, 1.4)), "steel", wear=W_STEEL, piece=pid)
+            else:
+                V.add("beam-wire", merge([wire((x - 4.0, hook_y, z0), (x - 4.0, top_beam, z0)), wire((x + 4.0, hook_y, z0), (x + 4.0, top_beam, z0))]),
+                      "steel", wear=W_CHAIN, piece=pid, smooth=True)
+
+    # ---- moving heads under the beams --------------------------------------
+    fx_z = [220.0, 360.0, 500.0, 640.0, 780.0]
+    for z in fx_z:
+        for sx in (-1, 1):
+            attach = np.array([sx * (BEAM_X - 10.0), BEAM_Y - 10.0 - R_CHORD * 0.85, z])
+            # each head points steeply down onto its own side of the aisle: in the haze the beams
+            # stand as a row of light columns leading to the wall, and none crosses behind the words
+            target = np.array([sx * 105.0, 0.0, z - 35.0])
+            if z in (500.0, 640.0):
+                # two rows fire up and across instead: their beams cross high in the vault, above the wall
+                target = np.array([-sx * 170.0, 470.0, z - 90.0])
+            body, clamp, lens, lc, a = moving_head(attach, target - (attach - np.array([0, 17.0, 0])))
+            pid = beam_piece(sx, z)
+            V.add("fixture", body, "coat", "coat", piece=pid, smooth=True)
+            V.add("fixture-clamp", clamp, "steel", wear=W_STEEL, piece=pid)
+            V.add("lens", lens, "lens", kind="lens", piece=pid)
+            V.fixtures.append(dict(pos=lc.tolist(), dir=a.tolist()))
+
+    # ---- ridge along the crowns --------------------------------------------
+    R_, C_, phiS, phiA = arch_params()
+    y_out = APEX_Y + TRUSS_D / math.sin(phiA)
+    ridge_y = y_out + R_CHORD + 9.0
+    rcuts = [ARCH_Z[0], 430.0, 640.0, ARCH_Z[-1]]
+    for zi in range(len(rcuts) - 1):
+        sec = straight_truss((0, ridge_y, rcuts[zi]), (0, ridge_y, rcuts[zi + 1]), (0, 1.0, 0), box_corners(18.0, 18.0),
+                             max(2, int(round((rcuts[zi + 1] - rcuts[zi]) / 22.0))), LOD["far"], rc=R_CHORD * 0.8, rl=R_LACE)
+        V.add("ridge", sec[0]["truss"], "truss", smooth=True, piece=V.new_piece())
+
+    # ---- gable towers, header, PA cantilevers -------------------------------
     for sx in (-1, 1):
-        nb = 15
-        A, _ = straight_nodes((sx * (SIDE_X - 10), LEG_BASE, gz), (sx * (SIDE_X - 10), tower_top, gz), nb, (0, 0, 0))
-        Bf, Bm = straight_nodes((sx * (SIDE_X + 10), LEG_BASE, gz), (sx * (SIDE_X + 10), tower_top, gz), nb, (0, 0, 0))
-        g_parts.append(ladder_truss(A, Bm, np.vstack([Bf[:1], Bm, Bf[-1:]]), chord_hint=[0, 0, 1.0]))
-        p0 = np.array([sx * SIDE_X, tower_top + 14, gz])
-        p1 = np.array([gable_c[0], gable_c[1], gz])
-        dr = norm(p1 - p0)
-        m = np.array([-dr[1], dr[0], 0.0]) * (-sx)  # in-plane, pointing up and outward
-        nb = 8
-        A, _ = straight_nodes(p0, p1, nb, -9 * m)
-        Bf, Bm = straight_nodes(p0, p1, nb, 9 * m)
-        g_parts.append(ladder_truss(A, Bm, np.vstack([Bf[:1], Bm, Bf[-1:]]), chord_hint=[0, 0, 1.0]))
-        blocks.append(box((sx * SIDE_X, tower_top + 12, gz), (16, 14, 8)))
-        blocks.append(box((sx * SIDE_X, 1.5, gz), (20, 1.5, 14), skip=("-y",)))
-        spikes.append(spike((sx * SIDE_X, tower_top + 24, gz), (0, 1, 0), 4.5, 40))
-    blocks.append(box((0, gable_c[1] + 2, gz), (14, 20, 10)))
-    spikes.append(spike((0, gable_c[1] + 20, gz), (0, 1, 0), 6.0, 84))
-    V.add("gable", merge(g_parts), "truss", smooth=True)
+        x = sx * SIDE_X
+        sec = straight_truss((x, LEG_BASE, TOWER_Z), (x, HEADER_Y - 12.0, TOWER_Z), (0, 0, 1.0), box_corners(24.0, 24.0), 19, LOD["far"],
+                             rc=R_CHORD * 0.9, cuts=[0, 6, 12, 19])
+        first = None
+        for s in sec:
+            pid = V.new_piece()
+            first = first or pid
+            V.add("tower", s["truss"], "truss", smooth=True, piece=pid)
+        V.add("tower-base", box((x, 1.5, TOWER_Z), (18.0, 1.5, 18.0), skip=("-y",)), "steel", wear=W_PLATE, piece=first, solid=True)
+        V.add("tower-sleeve", box((x, HEADER_Y, TOWER_Z), (15.0, 14.0, 15.0)), "coat", "coat", piece=pid)
+    sec = straight_truss((-PA_X - 14.0, HEADER_Y, TOWER_Z), (PA_X + 14.0, HEADER_Y, TOWER_Z), (0, 1.0, 0), box_corners(22.0, 22.0), 22,
+                         LOD["far"], rc=R_CHORD * 0.9, cuts=[0, 11, 22])
+    for s in sec:
+        V.add("header", s["truss"], "truss", smooth=True, piece=V.new_piece())
+    pa_parts = {}
+    for sx in (-1, 1):
+        x = sx * PA_X
+        sec = straight_truss((x, HEADER_Y - 2.0, TOWER_Z + 11.0), (x, HEADER_Y - 2.0, PA_Z + 18.0), (0, 1.0, 0), box_corners(14.0, 14.0), 4,
+                             LOD["far"], rc=R_CHORD * 0.75, rl=R_LACE * 0.9)
+        pid = V.new_piece()
+        pa_parts[sx] = pid
+        V.add("pa-arm", sec[0]["truss"], "truss", smooth=True, piece=pid)
 
-    # ---- flying buttresses: pier + pinnacle + arc flyer up to the springing ----
-    if buttresses:
-        b_parts = []
-        pier_x, pier_top, pier_base = 312.0, 140.0, 5.0
-        head = np.array([HALF_SPAN + TRUSS_D + 2, SPRING_Y - 6])
-        dy = head[1] - pier_top
-        cxb = (pier_x ** 2 - head[0] ** 2 - dy ** 2) / (2 * (pier_x - head[0]))   # arc centre x (tangent vertical at pier top)
-        rb = pier_x - cxb
-        th1 = math.atan2(dy, head[0] - cxb)
-        NP, NA, HB = 5, 5, 7.0
-
-        def bpt(f):
-            """f in [0, NP+NA]: centreline point and outward normal (right-hand side)."""
-            if f <= NP:
-                return np.array([pier_x, pier_base + (pier_top - pier_base) * f / NP]), np.array([1.0, 0.0])
-            th = th1 * (f - NP) / NA
-            n = np.array([math.cos(th), math.sin(th)])
-            return np.array([cxb, pier_top]) + rb * n, n
-
-        for z0 in ARCH_Z:
-            for sx in (-1, 1):
-                def p3(f, off):
-                    p, n = bpt(f)
-                    q = p + off * n
-                    return np.array([sx * q[0], q[1], z0])
-                A = np.array([p3(i, -HB) for i in range(NP + NA + 1)])
-                Bm = np.array([p3(i + 0.5, HB) for i in range(NP + NA)])
-                Bc = np.vstack([[p3(0, HB)], Bm[:NP], [p3(NP, HB)], Bm[NP:], [p3(NP + NA, HB)]])
-                b_parts.append(ladder_truss(A, Bm, Bc, chord_hint=[0, 0, 1.0], rc=R_CHORD * 0.9, rl=R_LACE * 0.9))
-                blocks.append(box((sx * pier_x, 2.5, z0), (15, 2.5, 13), skip=("-y",)))
-                blocks.append(box((sx * (pier_x + HB), pier_top + 3, z0), (4.5, 4.5, 4.5)))
-                spikes.append(spike((sx * (pier_x + HB), pier_top + 7, z0), (0, 1, 0), 3.6, 52))
-        V.add("buttresses", merge(b_parts), "truss", smooth=True)
-
-    # ---- PA: arms, drops, bumpers, line arrays ----------------------------
-    sp_parts, gr_parts, rig_parts = [], [], []
-    BW, BH, BD, BHB = 32.0, 19.5, 24.0, 13.5     # box width, front height, depth, back height
+    # ---- line arrays: eight cabinets each, splayed, with grilles and rigging --
+    BW, BH, BD, BHB = 32.0, 19.5, 24.0, 13.5
     tilts = [2, 4, 7, 11, 16, 22, 29, 37]
+    top_y = 300.0
     for sx in (-1, 1):
         xc = sx * PA_X
-        raft_y = (tower_top + 14) + (SIDE_X - PA_X) * (gable_c[1] - tower_top - 14) / SIDE_X
-        arm_y = raft_y - 3
-        blocks.append(box((xc, arm_y, 37.0), (2.6, 3.6, 40.0)))
-        blocks.append(box((xc, raft_y, gz), (5.0, 13.0, 4.5)))
-        for zz in (PA_Z - 10, PA_Z + 10):
-            rig_parts.append(polytube([(xc, arm_y - 3.6, zz), (xc, 306.0, zz)], 0.9, 3, hint=[1.0, 0, 0]))
-            blocks.append(box((xc, arm_y - 26.0, zz), (1.9, 5.0, 1.9)))
-        blocks.append(box((xc, 303.5, PA_Z), (BW / 2 + 1, 2.0, 15.0)))
-        F = np.array([300.0, PA_Z + BD / 2])  # (y, z) of the top front edge
+        pid = V.new_piece()
+        body_p, grille_p, plate_p = [], [], []
+        # fly bar and its wires up to the arm
+        body_p.append(box((xc, top_y + 4.0, PA_Z), (BW / 2 + 1.0, 2.0, 14.0)))
+        for zz in (PA_Z - 10.0, PA_Z + 10.0):
+            plate_p.append(wire((xc, top_y + 6.0, zz), (xc, HEADER_Y - 9.0 - R_CHORD, zz), 0.35))
+            plate_p.append(box((xc, top_y + 6.6, zz), (1.0, 1.0, 1.0)))
+        F = np.array([top_y, PA_Z + BD / 2])
         for th in tilts:
             a = math.radians(th)
-            up = np.array([math.cos(a), math.sin(a)])       # (y, z) along the front face
-            fw = np.array([-math.sin(a), math.cos(a)])      # (y, z) front normal
+            up = np.array([math.cos(a), math.sin(a)])
+            fw = np.array([-math.sin(a), math.cos(a)])
             F2 = F - BH * up
-            ft, fb = F - 0.45 * up, F2 + 0.45 * up
-            bt = F - BD * fw - (BH - BHB) / 2 * up - 0.45 * up
-            bb = F2 - BD * fw + (BH - BHB) / 2 * up + 0.45 * up
+            ft, fb = F - 0.5 * up, F2 + 0.5 * up
+            bt = F - BD * fw - (BH - BHB) / 2 * up - 0.5 * up
+            bb = F2 - BD * fw + (BH - BHB) / 2 * up + 0.5 * up
 
-            def q(p, x):
+            def q(p, x, inset=0.0):
+                p = np.asarray(p) - inset * fw
                 return np.array([x, p[0], p[1]])
 
             xl, xr = xc - BW / 2, xc + BW / 2
-            c8 = dict(ftl=q(ft, xl), ftr=q(ft, xr), fbl=q(fb, xl), fbr=q(fb, xr),
-                      btl=q(bt, xl), btr=q(bt, xr), bbl=q(bb, xl), bbr=q(bb, xr))
+            c8 = dict(ftl=q(ft, xl), ftr=q(ft, xr), fbl=q(fb, xl), fbr=q(fb, xr), btl=q(bt, xl), btr=q(bt, xr), bbl=q(bb, xl), bbr=q(bb, xr))
             cen = np.mean(list(c8.values()), axis=0)
-            faces = [
-                [c8["ftl"], c8["ftr"], c8["btr"], c8["btl"]],   # top
-                [c8["fbl"], c8["fbr"], c8["bbr"], c8["bbl"]],   # bottom
-                [c8["btl"], c8["btr"], c8["bbr"], c8["bbl"]],   # back
-                [c8["ftl"], c8["fbl"], c8["bbl"], c8["btl"]],   # left
-                [c8["ftr"], c8["fbr"], c8["bbr"], c8["btr"]],   # right
-            ]
-            sp_parts.append(convex(faces, centre=cen))
-            gr_parts.append(convex([[c8["ftl"], c8["ftr"], c8["fbr"], c8["fbl"]]], centre=cen))
+            body_p.append(convex([[c8["ftl"], c8["ftr"], c8["btr"], c8["btl"]], [c8["fbl"], c8["fbr"], c8["bbr"], c8["bbl"]],
+                                  [c8["btl"], c8["btr"], c8["bbr"], c8["bbl"]], [c8["ftl"], c8["fbl"], c8["bbl"], c8["btl"]],
+                                  [c8["ftr"], c8["fbr"], c8["bbr"], c8["btr"]]], centre=cen))
+            # front: a frame round a recessed grille
+            m = 1.3
+            ft_i, fb_i = ft - m * up, fb + m * up
+            o = [q(ft, xl), q(ft, xr), q(fb, xr), q(fb, xl)]
+            i = [q(ft_i, xl + m), q(ft_i, xr - m), q(fb_i, xr - m), q(fb_i, xl + m)]
+            ir = [q(ft_i, xl + m, 0.7), q(ft_i, xr - m, 0.7), q(fb_i, xr - m, 0.7), q(fb_i, xl + m, 0.7)]
+            fwd = np.array([0, fw[0], fw[1]])
+            for k in range(4):
+                quad = [o[k], o[(k + 1) % 4], i[(k + 1) % 4], i[k]]
+                body_p.append(convex([quad], centre=np.mean(quad, 0) - fwd))
+                wall_q = [i[k], i[(k + 1) % 4], ir[(k + 1) % 4], ir[k]]
+                inner_c = np.mean(ir, 0) + 0.35 * fwd
+                body_p.append(convex([wall_q], centre=2 * np.mean(wall_q, 0) - inner_c))
+            grille_p.append(convex([ir], centre=np.mean(ir, 0) - fwd))
+            # rigging plates on both sides, near the back corners
+            for xs_ in (xl - 0.3, xr + 0.3):
+                plate_p.append(box(np.array([xs_, (bt[0] + bb[0]) / 2, (bt[1] + bb[1]) / 2]) + np.array([0, 0, 2.0]),
+                                   (0.5, BHB * 0.48, 2.2)))
             F = F2
-    V.add("speakers", merge(sp_parts), "speaker")
-    V.add("grilles", merge(gr_parts), "grille")
-    V.add("pa-drops", merge(rig_parts), "truss", smooth=True)
+        V.add("speakers", merge(body_p), "coat", "coat", piece=pid, solid=True)
+        V.add("grilles", merge(grille_p), "coat", "coat", piece=pid, wear=W_GRILLE, solid=True)
+        V.add("pa-rigging", merge(plate_p), "steel", wear=W_STEEL, piece=pid)
 
-    # ---- moving heads ------------------------------------------------------
-    fx_body, fx_lens = [], []
-    phi_fx = phiS + (phiA - phiS) * 5.5 / N_ARC
-    p2, n2 = arch_point(phi_fx)
-    for z0 in ARCH_Z:
-        for sx in (-1, 1):
-            n3 = np.array([sx * n2[0], n2[1], 0.0])
-            attach = np.array([sx * p2[0], p2[1], z0]) - n3 * (R_CHORD * 0.6)
-            pivot = attach - n3 * 15.5
-            target = np.array([-sx * 60.0, 0.0, z0 + 40.0])
-            body, lens, lc, a = moving_head(attach, n3, target - pivot)
-            fx_body.append(body)
-            fx_lens.append(lens)
-            V.fixtures.append(dict(pos=lc.tolist(), dir=a.tolist()))
-    for sx in (-1, 1):
-        attach = np.array([sx * (HALF_SPAN + TRUSS_D / 2), SPRING_Y - 9 - R_CHORD * 0.6, 220.0])
-        pivot = attach - np.array([0, 15.5, 0])
-        target = np.array([-sx * 50.0, 60.0, 40.0])
-        body, lens, lc, a = moving_head(attach, (0, 1, 0), target - pivot)
-        fx_body.append(body)
-        fx_lens.append(lens)
-        V.fixtures.append(dict(pos=lc.tolist(), dir=a.tolist()))
-    V.add("fixtures", merge(fx_body), "fixture", smooth=True)
-    V.add("lenses", merge(fx_lens), "lens", kind="lens")
-
-    V.add("blocks", merge(blocks), "block")
-    V.add("spikes", merge(spikes), "block")
-    V.floor_grid = floor_grid
+    # ---- cable looms down the near legs and cable ramps on the floor ---------
+    # (asymmetric on purpose: a stagehand ran more cable on the left)
+    runs = [(-1, 850.0), (-1, 710.0), (1, 850.0)]
+    ramp_x = {-1: -(HALF_SPAN + TRUSS_D + 26.0), 1: HALF_SPAN + TRUSS_D + 26.0}
+    ramp_span = {-1: (690.0, 960.0), 1: (840.0, 960.0)}
+    for sx, z0 in runs:
+        pid = [p for (s, z, p) in pier_heads if s == sx and z == z0][0]
+        za_r, zb_r = ramp_span[sx]
+        ramp_in = {sx: min(max(z0 + (40.0 if sx < 0 else -10.0), za_r + 12.0), zb_r - 12.0)}
+        xo = sx * (HALF_SPAN + TRUSS_D + 3.2)
+        zl = z0 + TRUSS_W / 2 + 2.6 if sx < 0 else z0 - TRUSS_W / 2 - 2.6
+        rx = ramp_x[sx]
+        loom = [(xo, SPRING_Y - 16.0, zl), (xo, 40.0, zl), (xo + sx * 3.0, 14.0, zl), (xo + sx * 14.0, 4.8, zl + 6.0 * (1 if sx < 0 else -1)),
+                (rx, 1.6, ramp_in[sx])]
+        # the loom ends under its cable ramp (it used to stop short of the right-hand ramp and read
+        # as a brace with no foot); its end is capped
+        V.add("loom", polytube(loom, 1.5, 6, hint=[0, 0, 1.0], caps=(True, True)), "coat", "coat", piece=pid, smooth=True)
+        ties = [polytube([(xo, yy - 0.8, zl), (xo, yy + 0.8, zl)], 2.05, 6, hint=[0, 0, 1.0]) for yy in (60.0, 120.0, 180.0)]
+        V.add("loom-ties", merge(ties), "coat", "coat", piece=pid, smooth=True)
+    for sx, (za, zb) in ramp_span.items():
+        rx = ramp_x[sx]
+        pr = V.new_piece()
+        ramps = []
+        z = za
+        while z < zb - 1.0:
+            z1 = min(z + 39.0, zb)
+            caps = ([[(rx - 9, 0, z), (rx - 4, 3.4, z), (rx + 4, 3.4, z), (rx + 9, 0, z)]] if z <= za + 0.5 else []) +                    ([[(rx - 9, 0, z1), (rx - 4, 3.4, z1), (rx + 4, 3.4, z1), (rx + 9, 0, z1)]] if z1 >= zb - 0.5 else [])
+            ramps.append(convex(caps + [
+                                 [(rx - 9, 0, z), (rx - 4, 3.4, z), (rx - 4, 3.4, z1), (rx - 9, 0, z1)],
+                                 [(rx + 9, 0, z), (rx + 4, 3.4, z), (rx + 4, 3.4, z1), (rx + 9, 0, z1)],
+                                 [(rx - 4, 3.4, z), (rx + 4, 3.4, z), (rx + 4, 3.4, z1), (rx - 4, 3.4, z1)]], centre=(rx, 0.8, (z + z1) / 2)))
+            z = z1   # butted segments with no inner end caps: a gap read as a crack in the clay render
+        V.add("cable-ramp", merge(ramps), "coat", "coat", piece=pr, solid=True)
     return V
 
 
@@ -698,24 +950,22 @@ def assemble(V):
         if kind == "led":
             cs.sort(key=lambda c: c.screen)
         order += cs
-    pos, tri, uv, mats, smooth, tri_mat, tri_chunk, vkind, vsolid = [], [], [], [], [], [], [], [], []
+    pos, tri, uv, smooth, tri_mat, vkind, vsolid, piece = [], [], [], [], [], [], [], []
     groups, off = [], 0
     mat_names = []
-    for ci, c in enumerate(order):
+    for c in order:
         if c.mat not in mat_names:
             mat_names.append(c.mat)
         pos.append(c.v)
         tri.append(c.t + off)
-        uv.append(c.uv if c.uv is not None else np.zeros((len(c.v), 2)))
+        uv.append(c.uv)
         tri_mat.append(np.full(len(c.t), mat_names.index(c.mat)))
-        tri_chunk.append(np.full(len(c.t), ci))
         smooth.append(np.full(len(c.t), c.smooth))
         vkind.append(np.full(len(c.v), KIND_ORDER.index(c.kind)))
-        vsolid.append(np.full(len(c.v), c.name in SOLID_CHUNKS or c.kind == "led"))
+        vsolid.append(np.full(len(c.v), c.solid or c.kind in ("led", "floor")))
+        piece.append(np.full(len(c.v), c.piece))
         off += len(c.v)
-    # groups: contiguous index ranges per kind (one per screen for led)
-    start = 0
-    cur = None
+    start, cur = 0, None
     for c in order:
         key = (c.kind, c.screen)
         n = len(c.t) * 3
@@ -725,19 +975,19 @@ def assemble(V):
             cur = dict(key=key, kind=c.kind, screen=c.screen, start=start, count=n)
             groups.append(cur)
         start += n
-    names = {"floor": "floor", "baked": "structure", "lens": "lenses"}
+    names = {"floor": "floor", "baked": "structure", "coat": "black", "lens": "lenses", "glow": "edge-light"}
     out_groups = []
     for g in groups:
-        d = dict(name=names.get(g["kind"], "led-" + V.screens[g["screen"]]["name"] if g["kind"] == "led" else g["kind"]),
+        d = dict(name=names[g["kind"]] if g["kind"] != "led" else "led-" + V.screens[g["screen"]]["name"],
                  kind=g["kind"], start=g["start"], count=g["count"])
         if g["kind"] == "led":
             d["screen"] = g["screen"]
         out_groups.append(d)
     return dict(
         pos=np.concatenate(pos), tri=np.concatenate(tri), uv=np.concatenate(uv),
-        tri_mat=np.concatenate(tri_mat), tri_chunk=np.concatenate(tri_chunk), smooth=np.concatenate(smooth),
-        vkind=np.concatenate(vkind), vsolid=np.concatenate(vsolid), mat_names=mat_names, groups=out_groups,
-        chunk_names=[c.name for c in order], screens=V.screens, fixtures=V.fixtures)
+        tri_mat=np.concatenate(tri_mat), smooth=np.concatenate(smooth),
+        vkind=np.concatenate(vkind), vsolid=np.concatenate(vsolid), piece=np.concatenate(piece),
+        mat_names=mat_names, groups=out_groups, screens=V.screens, fixtures=V.fixtures)
 
 
 def to_blender(p):
@@ -747,15 +997,18 @@ def to_blender(p):
 
 if __name__ == "__main__":
     V = build()
-    tv = tt = 0
+    by = {}
     for c in V.chunks:
-        print("%-14s %-8s kind=%-5s verts=%6d tris=%6d" % (c.name, c.mat, c.kind, len(c.v), len(c.t)))
-        tv += len(c.v)
-        tt += len(c.t)
-    print("TOTAL verts=%d tris=%d  (budget 30000 / 45000)" % (tv, tt))
-    R, C, phiS, phiA = arch_params()
-    print("arch: R=%.1f centre=(%.1f, %.1f) springing kink=%.1f deg, apex slope=%.1f deg" % (
-        R, C[0], C[1], math.degrees(phiS), 90 - math.degrees(phiA)))
+        k = c.name.split("-")[0] if not c.name.startswith(("arch-", "shaft-", "beam-")) else c.name
+        a = by.setdefault(c.name, [0, 0])
+        a[0] += len(c.v)
+        a[1] += len(c.t)
+    tv = tt = 0
+    for k, (nv, nt) in sorted(by.items(), key=lambda kv: -kv[1][0]):
+        print("%-16s verts=%6d tris=%6d" % (k, nv, nt))
+        tv += nv
+        tt += nt
+    print("TOTAL verts=%d tris=%d pieces=%d  (budget 65000 verts)" % (tv, tt, V.npieces))
     D = assemble(V)
     assert D["pos"][:, 1].min() >= 0.0, "geometry under the floor"
     print("bounds", D["pos"].min(0), D["pos"].max(0))

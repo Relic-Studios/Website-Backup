@@ -107,7 +107,8 @@ These protect the credits from being challenged. `npm run check` enforces the on
   shared; official posts may only be reposted unaltered, under terms the owner has by email.
   If the credit is ever withdrawn, remove: the page `projects-backstreet-boys.html`, its row in the
   work list in `data.cjs` (this also removes it from the ticker, footer and sitemap), the biography
-  sentence on `aidan-poole.html`, and the "See also" line on `projects-streamdiffusion-notch.html`.
+  sentence on `aidan-poole.html`, and the redirect page `projects-streamdiffusion-notch.html`
+  (the StreamDiffusion and Notch work was part of this project, merged 2026-11-18).
 - New text carries no founding year for the studio, no employment dates and no placeholders
   ("TBD", "coming soon"). Unknown facts are left out.
 - Names are written exactly: Aidan Poole, Relic, RelicVisuals, @relic.visuals, Relic Studios,

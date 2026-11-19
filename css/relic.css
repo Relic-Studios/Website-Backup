@@ -498,9 +498,18 @@ kbd { padding: 4px 6px; border: 1px solid var(--line-2); border-radius: 2px; fon
    The home page closes inside the 3D place: one full screen of it, the LED wall in the upper
    half and the words at its foot. Without it (no WebGL, reduced motion, the model missing)
    none of this applies and the block is the ordinary one with a picture behind it. */
-.has-venue .cta--venue { min-height: 100vh; min-height: 100svh; display: grid; align-content: end; padding-bottom: clamp(40px, 8vh, 96px); }
+.has-venue .cta--venue { min-height: 100vh; min-height: 100svh; display: grid; align-content: end; padding-bottom: clamp(18px, 3vh, 40px); }
+/* At the very end of the page the footer comes up under the closing scene: the words are kept low
+   and tight so the LED wall stands whole above them (Director, checkpoint B, 2026-11-18). */
+.has-venue .cta--venue .lede { margin-bottom: 0; }
+.has-venue .cta--venue .btns { margin-top: clamp(18px, 2vw, 28px); }
+.has-venue .cta--venue .cta__mail { margin-top: 18px; }
+.has-venue .cta--venue + .footer, .has-venue .footer { padding-top: clamp(36px, 4vw, 56px); }
 .has-venue .cta--venue::before { display: none; }
 .has-venue .cta--venue .cta__title { font-size: clamp(1.3rem, 3.7vw, 3.4rem); margin-bottom: clamp(16px, 2vw, 28px); }
+/* over the scene the e-mail line was too faint to read (style-frame review, 2026-11-18) */
+.has-venue .cta--venue .cta__mail { font-size: .84rem; color: var(--ink-2); }
+.has-venue .cta--venue .cta__mail a { color: var(--ink); }
 
 /* ---------- studio / statement ---------- */
 .statement { font-size: clamp(1.4rem, 2.8vw, 2.6rem); font-weight: 300; letter-spacing: -.028em; line-height: 1.2; max-width: 28ch; }

@@ -18,6 +18,8 @@ BAKE_NPZ = os.path.join(HERE, "venue_bake.npz")
 OUT_JSON = os.path.join(REPO, "assets", "3d", "venue.json")
 OUT_BIN = os.path.join(REPO, "assets", "3d", "venue.bin")
 ART = os.path.join(REPO, "assets", "images", "newidk.jpg")
+LAB = os.path.join(REPO, "work", "lab", "venue2")     # judging renders (git-ignored)
+os.makedirs(LAB, exist_ok=True)
 
 # base colours used by the bake (linear). name: (rgb, roughness)
 MATS = {
@@ -30,6 +32,9 @@ MATS = {
     "grille":  ((0.060, 0.060, 0.064), 0.45),
     "frame":   ((0.030, 0.030, 0.032), 0.50),
     "fixture": ((0.055, 0.055, 0.058), 0.45),
+    "coat":    ((0.040, 0.040, 0.042), 0.55),
+    "steel":   ((0.060, 0.060, 0.062), 0.45),
+    "glow":    ((0.050, 0.050, 0.050), 0.40),
     "lens":    ((0.020, 0.020, 0.022), 0.15),
     "led0":    ((0.015, 0.015, 0.017), 0.30),
     "led1":    ((0.015, 0.015, 0.017), 0.30),
@@ -141,7 +146,7 @@ def _principled(nt, rgb, rough, metallic=0.0):
     return p
 
 
-def materials_lit(led_emit=0.0, lens_emit=0.0, led_image=None, led_gain=(1.0, 1.0, 1.0), beauty=False):
+def materials_lit(led_emit=0.0, lens_emit=0.0, led_image=None, led_gain=(1.0, 1.0, 1.0), beauty=False, glow_emit=0.0):
     """Physically lit materials.
     led_emit: emission strength of the LED faces (white unless led_image is given).
     led_gain: (camera, glossy, diffuse) multipliers on the LED emission (preview only).
@@ -193,6 +198,11 @@ def materials_lit(led_emit=0.0, lens_emit=0.0, led_image=None, led_gain=(1.0, 1.
                 nt.links.new(m2.outputs["Color"], mul.inputs[0])
                 nt.links.new(mul.outputs["Value"], em.inputs["Strength"])
             mat.cycles.emission_sampling = "FRONT"
+            nt.links.new(em.outputs["Emission"], out.inputs["Surface"])
+        elif name == "glow" and glow_emit > 0.0:
+            em = nt.nodes.new("ShaderNodeEmission")
+            em.inputs["Color"].default_value = (0.85, 0.92, 1.0, 1)
+            em.inputs["Strength"].default_value = glow_emit
             nt.links.new(em.outputs["Emission"], out.inputs["Surface"])
         elif name == "lens" and lens_emit > 0.0:
             em = nt.nodes.new("ShaderNodeEmission")
@@ -304,6 +314,24 @@ def make_rig_lights(fixtures, gain=1.0, spot_w=260.0, halo_w=16.0, sun_a=0.16, s
         col.objects.link(ob)
         obs.append(ob)
     return obs
+
+
+KEY = dict(pos=(0.0, 290.0, 6.0), radius=9.0)
+
+
+def make_key_light(power_w, name="WallKey"):
+    """The hot centre of the LED wall as a small disc light facing the nave: it gives the wall's light
+    crisp, motivated shadows (the wall's own soft emission fills around it)."""
+    ld = bpy.data.lights.new(name, "AREA")
+    ld.shape = "DISK"
+    ld.size = 2 * KEY["radius"] / G.UNITS_PER_METRE
+    ld.energy = power_w
+    ld.color = (1.0, 1.0, 1.0)
+    ob = bpy.data.objects.new(name, ld)
+    ob.location = b3(KEY["pos"])
+    ob.rotation_euler = bdir((0, 0, 1.0)).to_track_quat("-Z", "Y").to_euler()
+    bpy.context.scene.collection.objects.link(ob)
+    return ob
 
 
 def set_camera(scene, pos, look, vfov_deg=75.0, name="Cam"):

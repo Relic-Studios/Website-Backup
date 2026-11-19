@@ -17,16 +17,24 @@ const LINKS = {
     engramLicense: 'https://github.com/Relic-Studios/engram/blob/master/LICENSE'
 };
 
-// The work list. Same seven rows, same order, on the home page, the profile and the work index.
-// An unknown year stays empty. `form` is the star formation shown behind that project's page.
+// The work list, in this order on the home page, the profile and the work index. Credits run by
+// year, then the software. An unknown year stays empty. `form` is the star formation shown behind
+// that project's page. Each project page's "NN / total" comes from here ({{> num}}).
+// 2026-11-18: the StreamDiffusion and Notch row was folded into Backstreet Boys (the same project,
+// per the owner); its old page redirects. Added OMNI and ALTA, Shpongle, Russ, Potawatomi and
+// Summit Sessions from the owner's word and the files on his computer.
 const work = [
     { n: '01', slug: 'rohki-project-odyssey', title: 'Rohki and Project Odyssey', detail: 'AI animation and pipeline. First prize, Narrative (team award)', year: '2024', group: 'credits', form: 'galaxy' },
     { n: '02', slug: 'bernabeu-sky-bar', title: 'Bernabéu Sky-Bar', detail: 'Video-wall content, Madrid', year: '2024', group: 'credits', form: 'wall' },
-    { n: '03', slug: 'dae-v-bad-bunny', title: 'Dae-V / Bad Bunny', detail: 'Motion graphics for 36North, Puerto Rico', year: '2025', group: 'credits', form: 'ring' },
-    { n: '04', slug: 'backstreet-boys', title: 'Backstreet Boys', detail: 'StreamDiffusion work for the tour', year: '', group: 'credits', form: 'helix' },
-    { n: '05', slug: 'streamdiffusion-notch', title: 'StreamDiffusion and Notch', detail: 'Model fine-tuning and real-time integration', year: '', group: 'credits', form: 'wall' },
-    { n: '06', slug: 'atlas-voice', title: 'ATLAS Voice', detail: 'Software. Voice agents for group conversation, Windows', year: '2026', group: 'software', form: 'ring' },
-    { n: '07', slug: 'engram', title: 'Engram', detail: 'Software. Agent memory, MIT license', year: '', group: 'software', form: 'helix' }
+    { n: '03', slug: 'omni-alta-taiwan', title: 'OMNI and ALTA', detail: 'LED content for two nightclubs with 36North, Taiwan', year: '2024', group: 'credits', form: 'ring' },
+    { n: '04', slug: 'shpongle-warfield', title: 'Shpongle at The Warfield', detail: 'Live visuals with Glass Crane and Android Jones, San Francisco', year: '2025', group: 'credits', form: 'galaxy' },
+    { n: '05', slug: 'russ-tour', title: 'Russ tour', detail: '3D content for four song clips', year: '2025', group: 'credits', form: 'helix' },
+    { n: '06', slug: 'dae-v-bad-bunny', title: 'Dae-V / Bad Bunny', detail: 'Motion graphics for 36North, Puerto Rico', year: '2025', group: 'credits', form: 'ring' },
+    { n: '07', slug: 'backstreet-boys', title: 'Backstreet Boys', detail: 'StreamDiffusion and Notch for the tour', year: '', group: 'credits', form: 'helix' },
+    { n: '08', slug: 'potawatomi-anniversary', title: 'Potawatomi Hotel & Casino', detail: '35th anniversary film for the LED screens, Milwaukee', year: '2026', group: 'credits', form: 'wall' },
+    { n: '09', slug: 'summit-sessions-2026', title: 'Summit Sessions 2026', detail: 'Headline VJ, Wilseyville, California', year: '2026', group: 'credits', form: 'galaxy' },
+    { n: '10', slug: 'atlas-voice', title: 'ATLAS Voice', detail: 'Software. Voice agents for group conversation, Windows', year: '2026', group: 'software', form: 'ring' },
+    { n: '11', slug: 'engram', title: 'Engram', detail: 'Software. Agent memory, archived', year: '', group: 'software', form: 'helix' }
 ];
 
 // Gallery. `src` is the full file, `thumb` is made by tools/make-thumbs.cjs.
@@ -48,11 +56,11 @@ const gallery = [
     { type: 'video', src: 'assets/videos/newwatcher_tvai_optimized.mp4', poster: 'assets/images/video-thumbnails/newwatcher_tvai_optimized.jpg', title: 'The Watcher', caption: '3D animation | Cinema 4D, Octane' },
     { type: 'video', src: 'assets/videos/orb.mp4', poster: 'assets/images/video-thumbnails/orb.jpg', title: 'Orb', caption: 'Real-time art | TouchDesigner' },
 
-    { type: 'live', src: 'assets/videos/20250418_201655.mp4', poster: 'assets/images/video-thumbnails/20250418_201655.jpg', title: 'Live Event Visuals', caption: 'Real-time VJ performance | TouchDesigner' },
-    { type: 'live', src: 'assets/videos/20250418_220743.mp4', poster: 'assets/images/video-thumbnails/20250418_220743.jpg', title: 'LED Wall Performance', caption: 'Audio-reactive visuals | Live event' },
-    { type: 'live', src: 'assets/videos/20250418_223044.mp4', poster: 'assets/images/video-thumbnails/20250418_223044.jpg', title: 'Immersive Stage Design', caption: 'Multi-screen live performance' },
-    { type: 'live', src: 'assets/videos/20250418_225001.mp4', poster: 'assets/images/video-thumbnails/20250418_225001.jpg', title: 'Festival Visuals', caption: 'Real-time visuals | Live event' },
-    { type: 'live', src: 'assets/videos/20250418_235734.mp4', poster: 'assets/images/video-thumbnails/20250418_235734.jpg', title: 'Nightclub Performance', caption: 'Audio-reactive LED wall content' },
+    { type: 'live', src: 'assets/videos/20250418_201655.mp4', poster: 'assets/images/video-thumbnails/20250418_201655.jpg', title: 'Shpongle at The Warfield', caption: 'Live visuals, San Francisco | April 2025' },
+    { type: 'live', src: 'assets/videos/20250418_220743.mp4', poster: 'assets/images/video-thumbnails/20250418_220743.jpg', title: 'The Warfield, LED wall', caption: 'Shpongle live visuals | April 2025' },
+    { type: 'live', src: 'assets/videos/20250418_223044.mp4', poster: 'assets/images/video-thumbnails/20250418_223044.jpg', title: 'The Warfield, from the VJ position', caption: 'Shpongle live visuals | April 2025' },
+    { type: 'live', src: 'assets/videos/20250418_225001.mp4', poster: 'assets/images/video-thumbnails/20250418_225001.jpg', title: 'The Warfield, late set', caption: 'Shpongle live visuals | April 2025' },
+    { type: 'live', src: 'assets/videos/20250418_235734.mp4', poster: 'assets/images/video-thumbnails/20250418_235734.jpg', title: 'The Warfield, closing', caption: 'Shpongle live visuals | April 2025' },
     { type: 'live', src: 'assets/videos/Snapchat-1817447126.mp4', poster: 'assets/images/video-thumbnails/Snapchat-1817447126.jpg', title: 'Live VJ Set', caption: 'On-site performance' },
     { type: 'live', src: 'assets/videos/Snapchat-721211222.mp4', poster: 'assets/images/video-thumbnails/Snapchat-721211222.jpg', title: 'Venue Visuals', caption: 'LED wall content | Live performance' },
     { type: 'live', src: 'assets/videos/PXL_20250727_062750151.mp4', poster: 'assets/images/video-thumbnails/PXL_20250727_062750151.jpg', title: 'Stage Projection', caption: 'Live event production | 2025' }
@@ -108,26 +116,27 @@ const team = [
 ];
 
 // Achievement write-ups (About page cards; four of them also appear in full on the work index).
-// The text is the studio's existing text, unchanged.
+// The text is the studio's existing text. Owner, 2026-11-18: the real-time rendering systems are
+// built in Notch, not Unreal Engine, so Unreal was taken out of the Real-Time Rendering write-up.
 const achievements = [
     {
         id: 'real-time-rendering',
         title: 'Real-Time Rendering',
-        description: 'Detailed understanding of the technical and creative processes involved in optimizing for real-time efficiency and creative mastery using Unreal Engine, Notch Builder, and TouchDesigner.',
+        description: 'Detailed understanding of the technical and creative processes involved in optimizing for real-time efficiency and creative mastery using Notch Builder and TouchDesigner.',
         meta: 'Technical Excellence',
         paragraphs: [
-            'Developed through extensive experience with industry-leading platforms including Unreal Engine, Notch Builder, and TouchDesigner, demonstrating a detailed understanding of the technical and creative processes involved in optimizing for real-time efficiency and creative mastery. Expertise spans live performance control systems, interactive installations, and branded experiences that demand both visual excellence and real-time responsiveness.',
-            'Deep knowledge of real-time optimization workflows enables the delivery of photorealistic visuals in Unreal Engine, performance-critical systems in Notch Builder, and interactive installations in TouchDesigner—all while maintaining the technical balance between visual quality and real-time performance. These solutions enable live control of complex visual environments, responsive installations that react to user input, and branded experiences that maintain premium quality while running in real-time.'
+            'Developed through extensive experience with Notch Builder and TouchDesigner, demonstrating a detailed understanding of the technical and creative processes involved in optimizing for real-time efficiency and creative mastery. Expertise spans live performance control systems, interactive installations, and branded experiences that demand both visual excellence and real-time responsiveness.',
+            'Deep knowledge of real-time optimization workflows enables the delivery of real-time rendering systems and performance-critical live visuals in Notch Builder, and interactive installations in TouchDesigner—all while maintaining the technical balance between visual quality and real-time performance. These solutions enable live control of complex visual environments, responsive installations that react to user input, and branded experiences that maintain premium quality while running in real-time.'
         ],
         highlights: [
-            'Developed high-quality real-time rendering systems in Unreal Engine',
+            'Developed high-quality real-time rendering systems in Notch',
             'Created live-controllable visuals using Notch Builder for performances',
             'Built interactive installations with TouchDesigner real-time control',
             'Optimized workflows for balancing visual quality and real-time performance',
             'Expertise in technical processes for real-time efficiency and creative mastery',
             'Integrated live control interfaces for dynamic visual manipulation'
         ],
-        technologies: ['Unreal Engine', 'Notch Builder', 'TouchDesigner', 'Real-Time Rendering', 'Live Control Systems', 'Interactive Installations', 'GPU Optimization'],
+        technologies: ['Notch Builder', 'TouchDesigner', 'Real-Time Rendering', 'Live Control Systems', 'Interactive Installations', 'GPU Optimization'],
         link: { href: 'projects/#real-time-rendering', label: 'Read the full write-up' },
         onWorkIndex: true
     },
@@ -177,14 +186,14 @@ const achievements = [
     {
         id: 'live-event-visuals',
         title: 'Live Event Visuals',
-        description: 'Created time-coded and rendered visual content for major festival artists and companies including Sphongle, Thematic Entertainment, Waste My Life Later, and more.',
+        description: 'Created time-coded and rendered visual content for major festival artists and companies including Shpongle, Thematic Entertainment, Waste My Life Later, and more.',
         meta: 'Live Events',
         paragraphs: [
-            'Specialized in creating high-quality time-coded and pre-rendered visual content for music festivals and live performances. Worked with renowned companies and artists including Thematic Entertainment, Waste My Life Later, and Sphongle to deliver visually stunning festival experiences.',
+            'Specialized in creating high-quality time-coded and pre-rendered visual content for music festivals and live performances. Worked with renowned companies and artists including Thematic Entertainment, Waste My Life Later, and Shpongle to deliver visually stunning festival experiences.',
             'Expertise spans the full production pipeline from concept to delivery, utilizing industry-leading tools like Notch, Cinema 4D, Octane Render, and After Effects to create content that synchronizes perfectly with music and enhances live performances.'
         ],
         highlights: [
-            'Created visuals for Sphongle festival performances',
+            'Performed live visuals for Shpongle at The Warfield, San Francisco, with Glass Crane and Android Jones',
             'Collaborated with Thematic Entertainment and Waste My Life Later',
             'Specialized in time-coded content for perfect music synchronization',
             'Produced rendered content in Notch, Cinema 4D, and After Effects',

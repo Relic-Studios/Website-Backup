@@ -379,10 +379,17 @@
             // On the wall's plane a height Y (model units) lands f * (Y - 98) / dist px above the
             // middle of the frame; the wall's top is at 436, the floor at 0.
             const f = (vh / 2) / Math.tan(camera.fov * Math.PI / 360);
-            const dist = Math.max(703, Math.min(1000, 436 * f / Math.max(120, words - 6 - bar)));
-            const foot = vh / 2 + 98 * f / dist;                      // the floor line under the wall
+            // When the footer comes up, the place stops going up with the words (it used to leave
+            // only the floor behind the footer): the camera steps back so more of the nave shows,
+            // and the view never rises further than keeps the top of the wall under the menu bar.
+            const past = Math.max(0, vh - box.bottom);
+            const e = Math.min(1, past / (vh * 0.5)), end = e * e * (3 - 2 * e);
+            const fit = Math.max(703, Math.min(1000, 436 * f / Math.max(120, words - 6 - bar)));
+            const dist = fit * (1 + 0.55 * end);
+            const foot = vh / 2 + 98 * f / fit;                       // the floor line under the wall
             const up = Math.max(-vh * 0.1, foot - (words - 6));       // so that line meets the words
-            liftWanted = Math.max(-vh, Math.min(vh * 1.5, vh - box.bottom + up));
+            const top = vh / 2 - (436 - 98) * f / dist;               // the top of the wall, before the shift
+            liftWanted = Math.max(-vh, Math.min(vh * 1.5, vh - box.bottom + up, top - bar - 10));
             const k = Math.max(0, Math.min(1, 1 + (vh - box.bottom) / (vh * 0.6)));
             const back = 1 - k * k * (3 - 2 * k);
             targetPos.set(

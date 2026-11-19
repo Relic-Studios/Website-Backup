@@ -29,8 +29,9 @@ print("keys:", list(m.keys()))
 check("standIn" not in m, "no standIn flag")
 check(m["version"] == 1 and m["unitsPerMetre"] == 20, "version 1, unitsPerMetre 20")
 
-order = ["position", "wall", "rig", "uv", "index"]
-sizes = {"position": nv * 6, "wall": nv * 3, "rig": nv * 3, "uv": nv * 4, "index": ni * 2}
+order = ["position", "wall", "rig", "uv", "index", "piece"]
+sizes = {"position": nv * 6, "wall": nv * 3, "rig": nv * 3, "uv": nv * 4, "index": ni * 2, "piece": nv * 2}
+KINDS = ["floor", "baked", "coat", "led", "lens", "glow"]
 check(list(S.keys()) == order, "sections present in contract order")
 check(all(S[k] % 4 == 0 for k in order), "every section starts on a 4-byte boundary: %s" % S)
 exp = 0
@@ -40,22 +41,25 @@ for k in order:
     aligned &= S[k] == exp
     exp += sizes[k]
 check(aligned, "sections are packed back to back with zero padding only")
-check(len(raw) >= S["index"] + sizes["index"] and len(raw) - (S["index"] + sizes["index"]) < 4,
-      "file length matches the sections (%d expected, %d on disk)" % (S["index"] + sizes["index"], len(raw)))
+check(len(raw) >= S["piece"] + sizes["piece"] and len(raw) - (S["piece"] + sizes["piece"]) < 4,
+      "file length matches the sections (%d expected, %d on disk)" % (S["piece"] + sizes["piece"], len(raw)))
 
 qpos = np.frombuffer(raw, "<u2", nv * 3, S["position"]).reshape(-1, 3)
 wall = np.frombuffer(raw, "u1", nv * 3, S["wall"]).reshape(-1, 3)
 rig = np.frombuffer(raw, "u1", nv * 3, S["rig"]).reshape(-1, 3)
 quv = np.frombuffer(raw, "<u2", nv * 2, S["uv"]).reshape(-1, 2)
 idx = np.frombuffer(raw, "<u2", ni, S["index"])
+piece = np.frombuffer(raw, "<u2", nv, S["piece"])
 bmin, bmax = np.array(m["bounds"]["min"]), np.array(m["bounds"]["max"])
 pos = bmin + qpos / 65535.0 * (bmax - bmin)
 uv = quv / 65535.0
 tri = idx.reshape(-1, 3)
 
 print("\ncounts")
-print("  vertices %d (budget 30000)   indices %d   triangles %d (budget 45000)" % (nv, ni, ni // 3))
-check(nv <= 30000 and ni // 3 <= 45000 and ni % 3 == 0, "inside the vertex / triangle budget")
+print("  vertices %d (budget 65000, 16-bit indices)   indices %d   triangles %d (budget 150000)" % (nv, ni, ni // 3))
+check(nv <= 65000 and ni // 3 <= 150000 and ni % 3 == 0, "inside the vertex / triangle budget")
+total = len(raw) + os.path.getsize(JS) + (os.path.getsize(os.path.join(os.path.dirname(JS), m["floorMap"]["src"])) if "floorMap" in m else 0)
+check(total < 2_000_000, "model files together under 2 MB (%d bytes)" % total)
 check(int(idx.max()) < nv, "every index < vertexCount (max index %d)" % idx.max())
 check(len(np.unique(idx)) == nv, "every vertex is referenced")
 print("  bounds min %s max %s" % (m["bounds"]["min"], m["bounds"]["max"]))
@@ -74,8 +78,9 @@ for g in m["groups"]:
         g["name"], g["kind"], g["start"], g["count"], g["count"] // 3, len(np.unique(gi)), extra))
 check((cover == 1).all(), "groups cover every index exactly once")
 check(all(g["start"] % 3 == 0 and g["count"] % 3 == 0 for g in m["groups"]), "group ranges fall on triangle boundaries")
-check(set(kinds) == {"floor", "baked", "led", "lens"}, "kinds are floor / baked / led / lens")
-check([k for i, k in enumerate(kinds) if i == 0 or kinds[i - 1] != k] == ["floor", "baked", "led", "lens"], "each kind is contiguous")
+check(set(kinds) <= set(KINDS) and {"floor", "baked", "led", "lens"} <= set(kinds), "kinds are among %s" % KINDS)
+runs = [k for i, k in enumerate(kinds) if i == 0 or kinds[i - 1] != k]
+check(runs == [k for k in KINDS if k in kinds], "each kind is contiguous, in the order %s" % KINDS)
 check(sorted(g["screen"] for g in m["groups"] if g["kind"] == "led") == [0, 1, 2], "one led group per screen 0,1,2")
 
 # geometry sanity
@@ -89,19 +94,20 @@ vkind = np.full(nv, -1)
 for g in m["groups"]:
     gi = np.unique(idx[g["start"]:g["start"] + g["count"]])
     check((vkind[gi] == -1).all(), "group %s shares no vertices with earlier groups" % g["name"])
-    vkind[gi] = {"floor": 0, "baked": 1, "led": 2, "lens": 3}[g["kind"]]
+    vkind[gi] = KINDS.index(g["kind"])
 gf = next(g for g in m["groups"] if g["kind"] == "floor")
 ft = np.arange(gf["start"] // 3, (gf["start"] + gf["count"]) // 3)
 fv = np.unique(tri[ft])
 check(np.abs(pos[fv, 1]).max() < 1e-6, "floor is flat at y = 0")
 check((nrm[ft, 1] > 0).all(), "floor triangles are counter-clockwise seen from above (+Y)")
-check(abs(pos[fv, 0].min() + 330) < 0.02 and abs(pos[fv, 0].max() - 330) < 0.02 and abs(pos[fv, 2].min() + 60) < 0.02
-      and abs(pos[fv, 2].max() - 960) < 0.02, "floor spans x -330..330, z -60..960")
+check(abs(pos[fv, 0].min() + 460) < 0.02 and abs(pos[fv, 0].max() - 460) < 0.02 and abs(pos[fv, 2].min() + 60) < 0.02
+      and abs(pos[fv, 2].max() - 960) < 0.02, "floor spans x -460..460, z -60..960")
 xs, zs = np.unique(np.round(pos[fv, 0], 2)), np.unique(np.round(pos[fv, 2], 2))
 print("  floor grid: %d x %d quads" % (len(xs) - 1, len(zs) - 1))
 check(pos[:, 1].min() >= 0, "nothing below the floor")
 
 print("\nscreens")
+LED = KINDS.index("led")
 for g in m["groups"]:
     if g["kind"] != "led":
         continue
@@ -119,7 +125,9 @@ for g in m["groups"]:
     check(np.abs(pu - t[:, 0]).max() < 1e-3 and np.abs(pv - t[:, 1]).max() < 1e-3, "screen %d: uv (0,0) bottom-left, (1,1) top-right seen from +Z" % g["screen"])
     n = np.cross(pos[gt[:, 1]] - pos[gt[:, 0]], pos[gt[:, 2]] - pos[gt[:, 0]])
     check((n[:, 2] > 0).all() and np.abs(n[:, :2]).max() < 1e-3 * np.abs(n[:, 2]).min(), "screen %d is flat and faces +Z (counter-clockwise)" % g["screen"])
-check(np.abs(uv[vkind != 2]).max() == 0, "uv is zero outside the LED faces")
+check(uv.min() >= 0 and uv.max() <= 1, "wear values outside the LED faces lie in 0..1")
+check((piece[vkind == KINDS.index("floor")] == 0).all() and (piece[vkind == LED] == 0).all(), "floor and screen faces are piece 0 (they stay put)")
+check((piece[(vkind != KINDS.index("floor")) & (vkind != LED)] > 0).all(), "every other vertex belongs to a piece (%d pieces)" % piece.max())
 M = m["screens"]
 check(M[0]["min"] == [-110, 46, 0] and M[0]["max"] == [110, 436, 0], "main screen is 220 x 390 at z = 0, bottom y = 46")
 check(M[1]["max"][0] - M[1]["min"][0] == 46 and M[1]["max"][1] - M[1]["min"][1] == 300 and M[1]["min"][1] == 70 and M[1]["min"][2] == 14
@@ -127,16 +135,18 @@ check(M[1]["max"][0] - M[1]["min"][0] == 46 and M[1]["max"][1] - M[1]["min"][1] 
 
 print("\ncolour sections (stored bytes 0..255, and decoded linear = (b/255)^2 * scale)")
 print("  wallScale %.6f  rigScale %.6f" % (m["wallScale"], m["rigScale"]))
-names = ["floor", "baked", "led", "lens"]
+names = KINDS
 for nm, arr, sc in (("wall", wall, m["wallScale"]), ("rig", rig, m["rigScale"])):
     lin = (arr / 255.0) ** 2 * sc
     print("  %-4s all   : bytes min %3d mean %6.2f max %3d | linear min %.5f mean %.5f max %.5f" % (
         nm, arr.min(), arr.mean(), arr.max(), lin.min(), lin.mean(), lin.max()))
-    for k in range(4):
+    for k in range(len(KINDS)):
         sel = vkind == k
+        if not sel.any():
+            continue
         print("  %-4s %-6s: bytes min %3d mean %6.2f max %3d | rgb mean %s" % (
             nm, names[k], arr[sel].min(), arr[sel].mean(), arr[sel].max(), np.round(arr[sel].mean(0), 1).tolist()))
-    lit = (vkind == 0) | (vkind == 1)
+    lit = (vkind == 0) | (vkind == 1) | (vkind == 2)
     top = arr[lit].max() / 255.0
     check(0.88 <= top <= 0.92, "%s: brightest lit vertex encodes to %.3f (target about 0.9)" % (nm, top))
     front = lit & (pos[:, 2] > 20)      # behind the screen plane nothing can be lit by the wall

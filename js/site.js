@@ -131,13 +131,22 @@
             let d;
             if (artOn === 'frame') d = 0.02;          // a picture is on stage: nothing dims it
             else if (artOn === 'backdrop') d = 0.42;  // a picture fills the window behind text: keep the text readable
-            else if (currentSection && currentSection.dataset.form === 'venue' && root.classList.contains('has-venue')) d = 0.04; // the 3D place is the picture
+            else if (root.classList.contains('has-venue') && venueShown()) d = 0.04; // the 3D place is the picture (also once the footer has come up under it)
             else if (isHome) d = 0.10 + 0.34 * clamp(y / (window.innerHeight * 0.85), 0, 1); // the starfield is the hero; it steps back once reading starts
             else d = 0.26 + 0.2 * clamp(y / (window.innerHeight * 0.6), 0, 1);               // inner pages: the formation shows through the page title, then steps back
             root.style.setProperty('--dim', d.toFixed(3));
             updateLitText();
             doc.dispatchEvent(new CustomEvent('relic:scroll', { detail: { progress: p, y, section } }));
         });
+    }
+
+    // The closing scene's section still fills the top of the window (at the very end of the page the
+    // footer is the current section, and the old dimming put a dark layer over the LED wall).
+    function venueShown() {
+        const v = document.querySelector('[data-venue]');
+        if (!v) return false;
+        const r = v.getBoundingClientRect();
+        return r.top < window.innerHeight * 0.5 && r.bottom > window.innerHeight * 0.3;
     }
 
     function initMenu() {

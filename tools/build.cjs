@@ -303,6 +303,12 @@ ${panels}
             i === items.length - 1 ? `<li aria-current="page">${esc(label)}</li>` : `<li><a href="${href.replace('{{root}}', root)}">${esc(label)}</a></li>`).join('')}</ol></nav>`;
     },
 
+    // "NN / total" above a project's title, from its place in the work list.
+    num({ meta }) {
+        const w = data.work.find((x) => x.slug === meta.slug);
+        return w ? `${w.n} / ${String(data.work.length).padStart(2, '0')}` : '';
+    },
+
     // Previous / next project, in work-list order.
     pager({ root, meta }) {
         const i = data.work.findIndex((w) => w.slug === meta.slug);
@@ -355,7 +361,7 @@ function nav(root, active) {
 }
 
 function footer(root) {
-    const credits = data.work.filter((w) => ['rohki-project-odyssey', 'bernabeu-sky-bar', 'dae-v-bad-bunny', 'backstreet-boys', 'atlas-voice'].includes(w.slug));
+    const credits = data.work.filter((w) => ['rohki-project-odyssey', 'shpongle-warfield', 'russ-tour', 'dae-v-bad-bunny', 'backstreet-boys', 'potawatomi-anniversary', 'atlas-voice'].includes(w.slug));
     return `<footer class="footer" id="site-footer">
     <div class="wrap footer__grid">
         <div class="footer__brand">

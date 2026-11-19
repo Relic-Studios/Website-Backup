@@ -129,5 +129,7 @@ for k in range(ncomp):
     if (outward | inverted).all():    # every face is a supporting plane: the part is convex
         convex_parts += 1
         bad_faces += int(inverted.sum())
+        if inverted.any():
+            print("   inward faces in part at", np.round(P.mean(0), 1).tolist(), "faces", int(inverted.sum()), "of", len(sel))
 print("position-welded connected parts: %d; convex parts checked for outward winding: %d, inward-facing faces: %d" % (ncomp, convex_parts, bad_faces))
 sys.exit(1 if overlaps or bad_faces else 0)

@@ -92,9 +92,18 @@ To add a project page: copy one of `_src/pages/projects-*.html`, add its row to 
   a nave of pointed arches made of stage truss, with a tall LED wall that plays the studio's
   pictures (`venuePics` in `_src/data.cjs`). It belongs to the "Let's create something Epic"
   block: it rises into the window with that block, its pieces fly in from the sides and lock
-  together, the wall stands right above the words, and it goes up and out with them when the
-  footer comes. A click on the scene puts the next picture on the wall. It must look like part of
-  the page: dark metal on black, stars along the truss, the picture on the wall the only colour.
+  together, the wall stands right above the words. When the footer comes it stops rising with
+  them and the camera steps back, so the nave and the wall stay behind the block to the very end
+  of the page (the owner did not want only the floor left there). A click on the scene puts the
+  next picture on the wall. It must look like part of the page: worn aluminium on black (shaded in
+  js/venue.js from position, since the model has no texture coordinates: scuffs, pits, grime near
+  the floor, highlights along the tubes, the wall's picture mirrored in the metal), a floor of
+  black stage decks that mirror the wall unevenly. Two tileable surface textures sit beside the
+  model, `assets/3d/truss-aluminium.jpg` (projected from three axes onto the truss) and
+  `assets/3d/stage-deck.jpg` (each deck shows its own part): made with Krea 2 on BossLvl and
+  flattened and tiled by `work/lab/tex/prep.py`. They are room materials, not studio artwork.
+  Without them the shaders fall back to their own procedural wear; stars along the truss, the picture on the wall
+  the only colour.
   Visitors with reduced motion or without WebGL get the ordinary block instead.
 - **Calm at the top.** The stars keep one shape (the open cloud) from the top of the home page
   down to the gallery. Shape changes are for the lower sections. The owner found more than that
