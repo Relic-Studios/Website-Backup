@@ -78,7 +78,7 @@ for g in m["groups"]:
         g["name"], g["kind"], g["start"], g["count"], g["count"] // 3, len(np.unique(gi)), extra))
 check((cover == 1).all(), "groups cover every index exactly once")
 check(all(g["start"] % 3 == 0 and g["count"] % 3 == 0 for g in m["groups"]), "group ranges fall on triangle boundaries")
-check(set(kinds) <= set(KINDS) and {"floor", "baked", "led", "lens"} <= set(kinds), "kinds are among %s" % KINDS)
+check(set(kinds) <= set(KINDS) and {"floor", "baked", "led"} <= set(kinds), "kinds are among %s" % KINDS)
 runs = [k for i, k in enumerate(kinds) if i == 0 or kinds[i - 1] != k]
 check(runs == [k for k in KINDS if k in kinds], "each kind is contiguous, in the order %s" % KINDS)
 check(sorted(g["screen"] for g in m["groups"] if g["kind"] == "led") == [0, 1, 2], "one led group per screen 0,1,2")
@@ -174,19 +174,20 @@ for nm, arr, sc in (("wall", wall, m["wallScale"]), ("rig", rig, m["rigScale"]))
     print("  %-4s floor smoothness: |vertex - neighbour mean| median %.2f, p99 %.2f, max %.2f (bytes)" % (
         nm, np.median(dev), np.percentile(dev, 99), dev.max()))
 
-print("\nfixtures")
-fx = m["fixtures"]
-d = np.array([f["dir"] for f in fx])
-p = np.array([f["pos"] for f in fx])
-print("  %d fixtures; pos min %s max %s" % (len(fx), p.min(0).tolist(), p.max(0).tolist()))
-check(np.abs(np.linalg.norm(d, axis=1) - 1).max() < 1e-3, "aim directions are unit length")
-gl = next(g for g in m["groups"] if g["kind"] == "lens")
-lt = tri[gl["start"] // 3:(gl["start"] + gl["count"]) // 3]
-lc = pos[lt].reshape(len(fx), -1, 3).mean(1)
-ln = np.cross(pos[lt[:, 1]] - pos[lt[:, 0]], pos[lt[:, 2]] - pos[lt[:, 0]]).reshape(len(fx), -1, 3).sum(1)
-ln /= np.linalg.norm(ln, axis=1)[:, None]
-check(np.linalg.norm(lc - p, axis=1).max() < 1.0, "each lens disc sits at its fixture pos (max offset %.2f)" % np.linalg.norm(lc - p, axis=1).max())
-check((np.einsum("ij,ij->i", ln, d) > 0.999).all(), "each lens disc faces its fixture dir")
+if m["fixtures"]:
+    print("\nfixtures")
+    fx = m["fixtures"]
+    d = np.array([f["dir"] for f in fx])
+    p = np.array([f["pos"] for f in fx])
+    print("  %d fixtures; pos min %s max %s" % (len(fx), p.min(0).tolist(), p.max(0).tolist()))
+    check(np.abs(np.linalg.norm(d, axis=1) - 1).max() < 1e-3, "aim directions are unit length")
+    gl = next(g for g in m["groups"] if g["kind"] == "lens")
+    lt = tri[gl["start"] // 3:(gl["start"] + gl["count"]) // 3]
+    lc = pos[lt].reshape(len(fx), -1, 3).mean(1)
+    ln = np.cross(pos[lt[:, 1]] - pos[lt[:, 0]], pos[lt[:, 2]] - pos[lt[:, 0]]).reshape(len(fx), -1, 3).sum(1)
+    ln /= np.linalg.norm(ln, axis=1)[:, None]
+    check(np.linalg.norm(lc - p, axis=1).max() < 1.0, "each lens disc sits at its fixture pos (max offset %.2f)" % np.linalg.norm(lc - p, axis=1).max())
+    check((np.einsum("ij,ij->i", ln, d) > 0.999).all(), "each lens disc faces its fixture dir")
 
 print("\n%s" % ("ALL CHECKS PASSED" if not fails else "%d CHECK(S) FAILED: %s" % (len(fails), fails)))
 sys.exit(1 if fails else 0)

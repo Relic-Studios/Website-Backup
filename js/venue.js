@@ -967,8 +967,8 @@
             this.group.add(halo);
 
             // Haze cards across the nave (see HAZE_FRAGMENT): nearer cards are fainter.
-            this.hazeCards = [];   // one veil at each arch: the nave reads in steps of air
-            [[150, 0.022], [290, 0.017], [430, 0.012], [570, 0.008], [710, 0.005]].forEach(([z, gain], i) => {
+            this.hazeCards = [];   // three veils: the nave reads in steps of air
+            [[150, 0.024], [360, 0.016], [570, 0.009]].forEach(([z, gain], i) => {
                 const m = new THREE.ShaderMaterial({
                     uniforms: { uTint: { value: this.tint }, uGain: { value: 0 }, uZ: { value: z } },
                     vertexShader: HAZE_VERTEX, fragmentShader: HAZE_FRAGMENT,
@@ -1193,7 +1193,7 @@
         // Size of the picture the place is drawn into: every pixel of the window, up to a limit.
         resize() {
             const buf = this.renderer.getDrawingBufferSize(new THREE.Vector2());
-            const k = Math.min(1, 2560 / Math.max(buf.x, buf.y));
+            const k = Math.min(1, 1920 / Math.max(buf.x, buf.y));   // past this the truss gains nothing a viewer sees
             const w = Math.max(2, Math.round(buf.x * k)), h = Math.max(2, Math.round(buf.y * k));
             if (this.target && this.target.width === w && this.target.height === h) return;
             if (this.target) { this.target.setSize(w, h); return; }

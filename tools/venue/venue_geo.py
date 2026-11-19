@@ -797,23 +797,7 @@ def build():
                 V.add("beam-wire", merge([wire((x - 4.0, hook_y, z0), (x - 4.0, top_beam, z0)), wire((x + 4.0, hook_y, z0), (x + 4.0, top_beam, z0))]),
                       "steel", wear=W_CHAIN, piece=pid, smooth=True)
 
-    # ---- moving heads under the beams --------------------------------------
-    fx_z = [220.0, 360.0, 500.0, 640.0, 780.0]
-    for z in fx_z:
-        for sx in (-1, 1):
-            attach = np.array([sx * (BEAM_X - 10.0), BEAM_Y - 10.0 - R_CHORD * 0.85, z])
-            # each head points steeply down onto its own side of the aisle: in the haze the beams
-            # stand as a row of light columns leading to the wall, and none crosses behind the words
-            target = np.array([sx * 105.0, 0.0, z - 35.0])
-            if z in (500.0, 640.0):
-                # two rows fire up and across instead: their beams cross high in the vault, above the wall
-                target = np.array([-sx * 170.0, 470.0, z - 90.0])
-            body, clamp, lens, lc, a = moving_head(attach, target - (attach - np.array([0, 17.0, 0])))
-            pid = beam_piece(sx, z)
-            V.add("fixture", body, "coat", "coat", piece=pid, smooth=True)
-            V.add("fixture-clamp", clamp, "steel", wear=W_STEEL, piece=pid)
-            V.add("lens", lens, "lens", kind="lens", piece=pid)
-            V.fixtures.append(dict(pos=lc.tolist(), dir=a.tolist()))
+    # (no moving heads: the owner had the lights removed, 2026-11-18)
 
     # ---- ridge along the crowns --------------------------------------------
     R_, C_, phiS, phiA = arch_params()
