@@ -7,13 +7,13 @@
 // away along the line of sight (setPointerRay).
 
 class GPGPUStarfield {
-    constructor(scene, camera, renderer) {
+    constructor(scene, camera, renderer, options = {}) {
         this.scene = scene;
         this.camera = camera;
         this.renderer = renderer;
 
-        // Particle configuration
-        this.particleCount = 20000; // Increased for denser center
+        // Particle configuration: 20000 on a computer; phones pass fewer (options.count)
+        this.particleCount = options.count || 20000;
         this.textureSize = Math.ceil(Math.sqrt(this.particleCount));
 
         // Pointer: a ray from the camera through the cursor, and how fast the cursor is moving

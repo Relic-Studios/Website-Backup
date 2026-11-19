@@ -36,7 +36,7 @@
         return;
     }
     renderer.setSize(window.innerWidth, window.innerHeight);
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, coarse ? 1.5 : 2)); // a phone's 3x screen gains little past 1.5
     renderer.toneMapping = THREE.LinearToneMapping;
     renderer.toneMappingExposure = 1.0;
     renderer.outputEncoding = THREE.sRGBEncoding;
@@ -86,7 +86,8 @@
     camera.position.copy(camPos);
     camera.lookAt(camLook);
 
-    const starfield = new window.GPGPUStarfield(scene, camera, renderer);
+    // Phones and tablets get far fewer stars: on a computer the full 20000
+    const starfield = new window.GPGPUStarfield(scene, camera, renderer, { count: coarse ? 6000 : 20000 });
     const bloom = window.SimpleBloomComposer ? new window.SimpleBloomComposer(renderer, scene, camera) : null;
     if (bloom && reduced) bloom.amount = 0;
     if (form !== 'cloud' && starfield.setFormation) starfield.setFormation(form);
