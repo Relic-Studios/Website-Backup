@@ -68,7 +68,9 @@ To add a picture:
 Visitors with reduced motion, or without WebGL, see the same pictures as plain images.
 
 Headings: one word may be wrapped as `<span class="goth" data-keep>Word</span>` to set it in chrome
-blackletter. One per heading at most.
+blackletter. One per heading at most. A name counts as one word and is never split: when the
+heading ends on the studio's name, both words go in the span (`<span class="goth" data-keep>Relic
+Studios</span>`), not "Studios" alone.
 
 ## Wording rules for credits
 

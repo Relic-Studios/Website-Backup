@@ -65,7 +65,8 @@ To add a project page: copy one of `_src/pages/projects-*.html`, add its row to 
   are. `npm run check` fails if they differ from the published files.
 - **Type.** Headings are JetBrains Mono, light weight, capitals, wide letter-spacing. Body text is
   Inter. Labels are JetBrains Mono. At most one word in a heading is set in chrome blackletter
-  (the `goth` class, font "Manufacturing Consent"), echoing the logo. No italics and no serif
+  (the `goth` class, font "Manufacturing Consent"), echoing the logo. A name counts as one word:
+  "Relic Studios" is set whole in blackletter, never "Studios" alone. No italics and no serif
   accent words.
 - **Look.** Black background, live starfield, cyan `#00ced1` with a little violet `#a98bff`, thin
   frames with corner ticks, glass panels, a status line along the bottom edge.

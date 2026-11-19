@@ -99,6 +99,7 @@ main, .footer { position: relative; z-index: 2; }
 /* ---------- type ----------
    Headings are light mono capitals with wide tracking (the original Relic voice).
    One word per heading may be set in chrome blackletter (.goth), which echoes the logo.
+   A name counts as one word: "Relic Studios" is set whole, never "Studios" alone.
    The blackletter word is locked to the line: same baseline as the capitals, and sized so its
    lowercase letters are exactly as tall as the mono capitals (x-height .43em x 1.71 = cap height
    .735em). Only its initial rises above the line. Keep 1.71em and a plain baseline everywhere. */
